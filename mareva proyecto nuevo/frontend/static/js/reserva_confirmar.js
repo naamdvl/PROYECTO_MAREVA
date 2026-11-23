@@ -1,0 +1,193 @@
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("formConfirmarReserva");
+    const adultos = document.getElementById("inputAdultos");
+    const menores = document.getElementById("inputMenores");
+    const viajerosContainer = document.getElementById("viajerosContainer");
+    const resumenViajeros = document.getElementById("resumenViajeros");
+
+    if (!form) return;
+
+    // ---------- Constructor de viajeros ----------
+
+    function esc(valor) {
+        return String(valor ?? "").replace(/[&<>"']/g, carc => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        })[carc]);
+    }
+
+    function renderTravelers() {
+        if (!viajerosContainer) return;
+
+        const cantidadAdultos = Number(adultos?.value || 1);
+        const cantidadMenores = Number(menores?.value || 0);
+        const totalPersonas = cantidadAdultos + cantidadMenores;
+
+        if (resumenViajeros) {
+            resumenViajeros.textContent = totalPersonas;
+        }
+
+        // Conserva lo ya diligenciado al cambiar el número de viajeros.
+        const anteriores = [...viajerosContainer.querySelectorAll(".traveler-form")]
+            .map(box => ({
+                nombre: box.querySelector('[name="viajero_nombre[]"]')?.value || "",
+                apellido: box.querySelector('[name="viajero_apellido[]"]')?.value || "",
+                tipo: box.querySelector('[name="viajero_tipo_documento[]"]')?.value || "",
+                documento: box.querySelector('[name="viajero_documento[]"]')?.value || "",
+                idioma: box.querySelector('[name="viajero_idioma[]"]')?.value || "Español",
+            }));
+
+        viajerosContainer.innerHTML = "";
+
+        for (let i = 0; i < totalPersonas; i++) {
+            const tipoViajero = i < cantidadAdultos ? "Adulto" : "Menor";
+            const guardado = anteriores[i] || {};
+            const n = i + 1;
+            const tipos = ["CC", "CE", "Pasaporte", "TI", "NIT"];
+            const idiomas = ["Español", "Inglés", "Portugués", "Francés"];
+
+            const box = document.createElement("div");
+            box.className = "traveler-form";
+
+            box.innerHTML = `
+                <div class="traveler-form__title">
+                    <strong>Viajero ${n}</strong>
+                    <span>${tipoViajero}</span>
+                </div>
+
+                <div class="form-grid">
+                    <div>
+                        <label class="form-label">Nombre</label>
+                        <input class="form-input" name="viajero_nombre[]" required
+                               autocomplete="given-name" value="${esc(guardado.nombre)}">
+                    </div>
+                    <div>
+                        <label class="form-label">Apellido</label>
+                        <input class="form-input" name="viajero_apellido[]" required
+                               autocomplete="family-name" value="${esc(guardado.apellido)}">
+                    </div>
+                    <div>
+                        <label class="form-label">Tipo de documento</label>
+                        <select class="form-select" name="viajero_tipo_documento[]" required>
+                            <option value="">Selecciona</option>
+                            ${tipos.map(valor => `<option value="${valor}"
+                                ${guardado.tipo === valor ? "selected" : ""}>${valor}</option>`).join("")}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Número de documento</label>
+                        <input class="form-input" name="viajero_documento[]" required
+                               value="${esc(guardado.documento)}">
+                    </div>
+                    <div>
+                        <label class="form-label">Idioma preferido</label>
+                        <select class="form-select" name="viajero_idioma[]" required>
+                            ${idiomas.map(valor => `<option value="${valor}"
+                                ${guardado.idioma === valor ? "selected" : ""}>${valor}</option>`).join("")}
+                        </select>
+                    </div>
+                </div>
+            `;
+
+            viajerosContainer.appendChild(box);
+        }
+    }
+
+    adultos?.addEventListener("change", renderTravelers);
+    menores?.addEventListener("change", renderTravelers);
+
+    // ---------- Cambio de fecha ----------
+
+    const cambiaFechaPanel = document.getElementById("cambiarFecha");
+    const botonCambiaFecha = document.querySelector("[onclick='toggleFecha(this)']");
+
+    window.toggleFecha = function (boton) {
+        if (!cambiaFechaPanel) return;
+        cambiaFechaPanel.hidden = !cambiaFechaPanel.hidden;
+        if (!cambiaFechaPanel.hidden) {
+            cambiaFechaPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    };
+
+    window.aplicarFecha = function () {
+        if (!cambiaFechaPanel) return;
+
+        const elegida = cambiaFechaPanel.querySelector('input[name="id_salida_alt"]:checked');
+        if (!elegida) return;
+
+        const oculto = form.querySelector('input[name="id_salida"]');
+        if (oculto) oculto.value = elegida.value;
+
+        const rotulo = elegida.closest(".pick-date");
+        const texto = rotulo ? rotulo.querySelector("strong").textContent : "Actualizada";
+
+        const itemFecha = form.querySelector(".confirm-card .sel-item");
+        if (itemFecha) {
+            const strong = itemFecha.querySelector(".sel-item__body strong");
+            if (strong) strong.textContent = texto;
+        }
+
+        cambiaFechaPanel.hidden = true;
+    };
+
+    // ---------- Validación al enviar ----------
+
+    form.addEventListener("submit", event => {
+        const idSalida = form.querySelector('input[name="id_salida"]')?.value;
+        const alojamiento = form.querySelector('input[name="alojamiento"]:checked');
+
+        if (!idSalida) {
+            event.preventDefault();
+            alert("Debes elegir una fecha de salida.");
+            return;
+        }
+
+        if (!alojamiento) {
+            event.preventDefault();
+            alert("Debes elegir un alojamiento.");
+            return;
+        }
+
+        const personas = Number(adultos?.value || 1) + Number(menores?.value || 0);
+        if (personas < 1) {
+            event.preventDefault();
+            alert("Debes ingresar al menos un viajero.");
+        }
+    });
+
+    // ---------- Precio total dinámico ----------
+
+    const precioTotalEl = document.getElementById("precioTotal");
+    const precioBase = parseFloat(precioTotalEl?.dataset.base) || 0;
+
+    function formatearPrecio(valor) {
+        return "$" + Math.round(valor).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    function actualizarPrecioTotal() {
+        if (!precioTotalEl) return;
+
+        let total = precioBase;
+
+        document.querySelectorAll(
+            'input[name="alimentacion"]:checked, ' +
+            'input[name="transporte"]:checked, ' +
+            'input[name="actividades"]:checked, ' +
+            'input[name="extras"]:checked'
+        ).forEach(cb => {
+            total += parseFloat(cb.dataset.precio) || 0;
+        });
+
+        precioTotalEl.textContent = formatearPrecio(total);
+    }
+
+    document.querySelectorAll(
+        'input[name="alimentacion"], input[name="transporte"], ' +
+        'input[name="actividades"], input[name="extras"]'
+    ).forEach(cb => {
+        cb.addEventListener("change", actualizarPrecioTotal);
+    });
+
+    actualizarPrecioTotal();
+
+    renderTravelers();
+});
