@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Pago realizado · Turismo Mágico{% endblock %}
+
+{% block content %}
+
+<section class="payment-page">
+    <div class="container payment-container payment-container--narrow">
+
+        <div class="payment-header payment-header--center">
+            <span class="eyebrow">TURISMO MÁGICO · CONFIRMACIÓN</span>
+            <h1>¡Pago realizado!</h1>
+            <p>Tu reserva quedó registrada como <strong>Pagada</strong>.</p>
+        </div>
+
+        <div class="success-card">
+            <div class="success-icon" aria-hidden="true">✓</div>
+
+            <h2>Pago realizado por {{ pago.telefono or pago.detalle_pagador }} por un valor de ${{ "{:,.0f}".format(pago.monto|float) }}</h2>
+
+            <p class="success-lead">
+                Gracias por tu pago. Conserva el comprobante y el código de reserva
+                para presentarlos al proveedor del servicio.
+            </p>
+
+            <div class="success-status">
+                <span class="success-status__dot"></span>
+                RESERVA PAGADA
+            </div>
+
+            <div class="pending-details">
+                <div>
+                    <span>Código de reserva</span>
+                    <strong>{{ pago.codigo_unico }}</strong>
+                </div>
+                <div>
+                    <span>Método de pago</span>
+                    <strong>{{ pago.metodo_nombre }}</strong>
+                </div>
+                <div>
+                    <span>Fecha del pago</span>
+                    <strong>{{ pago.fecha_aprobacion }}</strong>
+                </div>
+                <div>
+                    <span>Beneficiario</span>
+                    <strong>{{ pago.beneficiario_nombre }}</strong>
+                </div>
+                <div>
+                    <span>Cuenta de destino</span>
+                    <strong>{{ pago.beneficiario_cuenta }}</strong>
+                </div>
+            </div>
+
+            <div class="success-actions">
+                <a
+                    href="{{ url_for('reserva.descargar_comprobante', token=token) }}"
+                    class="btn btn-primary btn-lg"
+                >
+                    ⬇️ Descargar comprobante
+                </a>
+                <a
+                    href="{{ url_for('home.perfil') }}"
+                    class="btn btn-outline btn-lg"
+                >
+                    Ver mis reservas
+                </a>
+            </div>
+
+            <div class="payment-warning">
+                <strong>🔒 Pago verificado</strong>
+                <p>
+                    MAREVA no recibe pagos directamente. El pago fue acreditado
+                    a {{ pago.beneficiario_nombre }} y ya consta en tu reserva.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

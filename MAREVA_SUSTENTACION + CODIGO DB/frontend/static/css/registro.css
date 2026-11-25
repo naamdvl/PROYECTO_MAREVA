@@ -1,0 +1,24 @@
+.legal-dialog {
+    /* NO pongas display aquí: así no se rompe el cierre */
+    margin: auto;               /* centra horizontal y verticalmente */
+    padding: 0;
+    border: none;
+    border-radius: 16px;
+    width: min(680px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    overflow: hidden;
+}
+
+.legal-dialog[open] {
+    display: flex;              /* solo cuando está abierto */
+    flex-direction: column;
+}
+
+.legal-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.legal-dialog__body {
+    flex: 1 1 auto;
+    overflow-y: auto;           /* el scroll va dentro de la tarjeta */
+}

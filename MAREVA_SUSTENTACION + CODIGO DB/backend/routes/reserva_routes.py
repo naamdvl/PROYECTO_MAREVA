@@ -1,0 +1,195 @@
+from flask import Blueprint, session, redirect, url_for, request, send_file, render_template
+from functools import wraps
+
+from controllers.reserva_controllers import ReservaController
+
+
+reserva_bp = Blueprint("reserva", __name__)
+
+controller = ReservaController()
+
+
+def requiere_admin(funcion):
+    @wraps(funcion)
+    def envoltorio(*args, **kwargs):
+        usuario = session.get("usuario") or {}
+        if usuario.get("rol") != "admin":
+            return redirect(
+                url_for("auth.mostrar_login", next=request.path)
+            )
+        return funcion(*args, **kwargs)
+
+    return envoltorio
+
+
+@reserva_bp.route("/reserva/<slug>", methods=["GET"])
+def mostrar_formulario(slug):
+    if "usuario" not in session:
+        return redirect(
+            url_for(
+                "auth.mostrar_login",
+                next=f"/reserva/{slug}"
+            )
+        )
+
+    return controller.mostrar_formulario(slug)
+
+
+@reserva_bp.route(
+    "/reserva/viajero/<int:id_viajero>/editar",
+    methods=["POST"]
+)
+def guardar_cambios_viajero(id_viajero):
+    return controller.guardar_cambios_viajero(id_viajero)
+
+
+@reserva_bp.route(
+    "/reserva/<int:id_reserva>/viajeros",
+    methods=["GET"]
+)
+def modificar_viajeros(id_reserva):
+    return controller.modificar_viajeros(id_reserva)
+
+
+@reserva_bp.route(
+    "/reservas/<int:id_reserva>/completar",
+    methods=["POST"]
+)
+@requiere_admin
+def completar_reserva(id_reserva):
+    return controller.completar_reserva(id_reserva)
+
+
+@reserva_bp.route(
+    "/admin/reservas/<int:id_reserva>/reembolso",
+    methods=["POST"]
+)
+@requiere_admin
+def marcar_reembolso(id_reserva):
+    return controller.marcar_reembolso(id_reserva)
+
+
+@reserva_bp.route("/admin/reservas")
+@requiere_admin
+def listar_reservas_admin():
+    return controller.listar_reservas_admin()
+
+
+@reserva_bp.route(
+    "/api/paquetes/<int:id_paquete>/disponibilidad",
+    methods=["GET"]
+)
+def disponibilidad(id_paquete):
+    return controller.disponibilidad_json(id_paquete)
+
+
+@reserva_bp.route(
+    "/reserva/preparar/<slug>",
+    methods=["POST"]
+)
+def preparar(slug):
+    return controller.preparar_reserva(slug)
+
+
+@reserva_bp.route(
+    "/reserva/confirmar/<slug>",
+    methods=["GET"]
+)
+def confirmar_reserva(slug):
+    return controller.mostrar_confirmacion_reserva(slug)
+
+
+@reserva_bp.route(
+    "/reserva/guardar/<slug>",
+    methods=["POST"]
+)
+def guardar(slug):
+    return controller.guardar_reserva(slug)
+
+@reserva_bp.route(
+    "/confirmar-reserva",
+    methods=["POST"]
+)
+def confirmar(slug):
+    slug = (request.form.get("slug") or "").strip()
+
+    if not slug:
+        return redirect(
+            url_for("paquetes.listar_catalogo")
+        )
+
+    return controller.confirmar(slug)
+
+
+@reserva_bp.route(
+    "/reserva/confirmacion",
+    methods=["GET"]
+)
+def confirmacion():
+    if "usuario" not in session:
+        return redirect(
+            url_for("auth.mostrar_login")
+        )
+
+    return controller.mostrar_confirmacion()
+
+
+@reserva_bp.route(
+    "/reserva/confirmacion/pdf",
+    methods=["GET"]
+)
+def descargar_pdf():
+    if "usuario" not in session:
+        return redirect(
+            url_for("auth.mostrar_login")
+        )
+
+    resultado = controller.descargar_pdf()
+
+    if not hasattr(resultado, "getvalue"):
+        return resultado
+
+    return send_file(
+        resultado,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name="reserva_mareva.pdf"
+    )
+
+@reserva_bp.route("/pago/<int:id_reserva>", methods=["GET"])
+def pago(id_reserva):
+    return controller.mostrar_pago(id_reserva)
+
+
+@reserva_bp.route(
+    "/reserva/cancelar/<int:id_reserva>",
+    methods=["POST"]
+)
+def cancelar_reserva_cliente(id_reserva):
+    return controller.cancelar_reserva_cliente(id_reserva)
+
+
+@reserva_bp.route("/reserva/pago/procesar/<int:id_reserva>", methods=["POST"])
+def procesar_pago(id_reserva):
+    return controller.procesar_pago(id_reserva)
+
+
+@reserva_bp.route("/pago/pendiente/<token>", methods=["GET"])
+def pago_pendiente(token):
+    return controller.pago_pendiente(token)
+
+
+@reserva_bp.route("/pago/estado/<token>", methods=["GET"])
+def estado_pago(token):
+    return controller.estado_pago(token)
+
+
+@reserva_bp.route("/pago/aprobar/<token>", methods=["GET"])
+def aprobar_pago(token):
+    return controller.aprobar_pago(token)
+
+
+@reserva_bp.route("/pago/comprobante/<token>", methods=["GET"])
+def descargar_comprobante(token):
+    return controller.descargar_comprobante(token)
+

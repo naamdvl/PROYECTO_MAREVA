@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Verifica tu Gmail · Turismo Mágico{% endblock %}
+
+{% block content %}
+
+<section class="payment-page">
+    <div class="container payment-container payment-container--narrow">
+
+        <div class="payment-header payment-header--center">
+            <span class="eyebrow">TURISMO MÁGICO · VERIFICACIÓN</span>
+            <h1>Verifique su Gmail para aceptar el pago</h1>
+            <p>
+                Enviamos un correo de confirmación con el enlace
+                <strong>Realizar pago</strong>. Cuando lo apruebes, esta pantalla
+                se actualizará automáticamente.
+            </p>
+        </div>
+
+        <div class="pending-card">
+            <div class="pending-animation" aria-hidden="true">
+                <span class="pending-envelope">✉️</span>
+                <span class="pending-pulse pending-pulse--uno"></span>
+                <span class="pending-pulse pending-pulse--dos"></span>
+            </div>
+
+            <span class="pending-step">PASO 2 DE 3</span>
+            <h2>Revisa tu correo</h2>
+            <p class="pending-lead">
+                Pago realizado por
+                <strong>{{ pago.telefono or pago.detalle_pagador }}</strong>
+                por un valor de
+                <strong>${{ "{:,.0f}".format(pago.monto|float) }}</strong>.
+            </p>
+
+            <div class="pending-steps">
+                <div class="pending-step-item pending-step-item--done">
+                    <span>1</span>
+                    <strong>Datos recibidos</strong>
+                </div>
+                <div class="pending-step-item pending-step-item--active">
+                    <span>2</span>
+                    <strong>Confirmación por correo</strong>
+                </div>
+                <div class="pending-step-item">
+                    <span>3</span>
+                    <strong>Pago registrado</strong>
+                </div>
+            </div>
+
+            <div class="pending-details">
+                <div>
+                    <span>Reserva</span>
+                    <strong>{{ pago.codigo_unico }}</strong>
+                </div>
+                <div>
+                    <span>Método</span>
+                    <strong>{{ pago.metodo_nombre }}</strong>
+                </div>
+                <div>
+                    <span>Beneficiario</span>
+                    <strong>{{ pago.beneficiario_nombre }}</strong>
+                </div>
+                <div>
+                    <span>Cuenta</span>
+                    <strong>{{ pago.beneficiario_cuenta }}</strong>
+                </div>
+            </div>
+
+            <div class="pending-notice">
+                <strong>¿No ves el correo?</strong>
+                <p>
+                    Revisa la carpeta de spam o promociones. El enlace vence en 60 minutos.
+                </p>
+            </div>
+
+            <a href="{{ url_for('home.perfil') }}" class="btn btn-outline btn-lg">
+                Volver a mis reservas
+            </a>
+        </div>
+    </div>
+</section>
+
+<script>
+  const estadoPagoUrl = "{{ url_for('reserva.estado_pago', token=token) }}";
+  const pagoAprobadoUrl = "{{ url_for('reserva.aprobar_pago', token=token) }}";
+
+  const verificarEstado = async () => {
+    try {
+      const respuesta = await fetch(estadoPagoUrl, { cache: "no-store" });
+      const datos = await respuesta.json();
+      if (datos.ok && datos.aprobado) {
+        window.location.href = pagoAprobadoUrl;
+      }
+    } catch (error) {
+      console.error("No fue posible consultar el estado del pago.", error);
+    }
+  };
+
+  verificarEstado();
+  const intervalo = window.setInterval(verificarEstado, 3000);
+  window.setTimeout(() => window.clearInterval(intervalo), 3600000);
+</script>
+
+{% endblock %}
