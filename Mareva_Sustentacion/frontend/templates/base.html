@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}MAREVA · Viajes por Colombia{% endblock %}</title>
+  <meta name="description" content="MAREVA: descubre, compara y reserva experiencias inolvidables por Colombia.">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pago.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/paquetes.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/gamificacion.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/guia.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reportes.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/registro.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mareva_redesign.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/perfil.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/niveles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reserva_flow.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/css/intlTelInput.css">
+</head>
+
+<body>
+
+<div class="mareva-sunline" aria-hidden="true"></div>
+<header>
+  <nav class="navbar">
+    <div class="container navbar__inner">
+
+<a href="{{ url_for('home.home') }}" class="navbar__logo">
+  <img src="{{ url_for('static', filename='img/logo_mareva.png') }}"
+       alt="Logo MAREVA"
+       class="navbar__logo-img"
+       style="height: 50px; width: auto;">
+  MAREVA
+</a>
+
+      <ul class="navbar__nav" id="mainNav">
+        {% set rol_actual = session.get('usuario', {}).get('rol') %}
+        {% if rol_actual == 'admin' %}
+          <li><a href="{{ url_for('dashboard.mostrar_panel') }}" class="navbar__link">Panel</a></li>
+          <li><a href="{{ url_for('paquetes.panel_admin') }}" class="navbar__link">Paquetes</a></li>
+          <li><a href="{{ url_for('destinos.panel_admin') }}" class="navbar__link">Destinos</a></li>
+          <li><a href="{{ url_for('gamificacion.admin_niveles') }}" class="navbar__link">Niveles</a></li>
+          <li><a href="{{ url_for('proveedor.registrar_proveedor') }}" class="navbar__link">Proveedores</a></li>
+          <li><a href="{{ url_for('reporte.mostrar_panel') }}" class="navbar__link">Reportes</a></li>
+          <li><a href="{{ url_for('reserva.listar_reservas_admin') }}" class="navbar__link">Reservas</a></li>
+        {% elif rol_actual == 'guia' %}
+          <li><a href="{{ url_for('guia.panel') }}" class="navbar__link active">Mi viaje</a></li>
+        {% elif rol_actual == 'proveedor' %}
+          <li><a href="{{ url_for('home.home') }}" class="navbar__link">Inicio</a></li>
+          <li><a href="{{ url_for('proveedor.contratos') }}" class="navbar__link">Contratos</a></li>
+          <li><a href="{{ url_for('proveedor.reservas') }}" class="navbar__link {% if request.path.startswith('/proveedores/reservas') %}active{% endif %}">Reservas</a></li>
+        {% elif rol_actual == 'cliente' %}
+          <li><a href="{{ url_for('home.home') }}" class="navbar__link {% if request.path == '/' %}active{% endif %}">Inicio</a></li>
+          <li><a href="{{ url_for('paquetes.listar_catalogo') }}" class="navbar__link {% if request.path.startswith('/paquetes') %}active{% endif %}">Paquetes</a></li>
+          <li><a href="{{ url_for('destinos.listar_catalogo') }}" class="navbar__link {% if request.path.startswith('/destinos') %}active{% endif %}">Destinos</a></li>
+          <li><a href="{{ url_for('favoritos.listar') }}" class="{% if request.path == '/favoritos'%}active{% endif %} navbar__link">Favoritos (<span data-favoritos-total>{{ session.get('favoritos', [])|length }}</span>)</a></li>
+        {% else %}
+          <li><a href="{{ url_for('home.home') }}" class="navbar__link {% if request.path == '/' %}active{% endif %}">Inicio</a></li>
+          <li><a href="{{ url_for('paquetes.listar_catalogo') }}" class="navbar__link {% if request.path.startswith('/paquetes') %}active{% endif %}">Paquetes</a></li>
+          <li><a href="{{ url_for('destinos.listar_catalogo') }}" class="navbar__link {% if request.path.startswith('/destinos') %}active{% endif %}">Destinos</a></li>
+          <li><a href="{{ url_for('favoritos.listar') }}" class="{% if request.path == '/favoritos'%}active{% endif %} navbar__link">Favoritos (<span data-favoritos-total>{{ session.get('favoritos', [])|length }}</span>)</a></li>
+        {% endif %}
+      </ul>
+
+<div class="navbar__actions">
+
+
+  {% if session.get('usuario') %}
+
+    {% set usuario = session.get('usuario', {}) %}
+    {% set rol = usuario.get('rol', '') %}
+
+    {% if encuesta_pendiente %}
+    <div class="notification-wrap" id="notificacionesWrap">
+      <button type="button" class="notification-btn" id="btnNotificaciones"
+              aria-expanded="false" aria-controls="panelNotificaciones"
+              aria-label="Abrir notificaciones">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 22a2.2 2.2 0 0 0 2.2-2.2H9.8A2.2 2.2 0 0 0 12 22Zm7-5.2V10a7 7 0 0 0-5.3-6.8V3a1.7 1.7 0 0 0-3.4 0v.2A7 7 0 0 0 5 10v6.8L3 19.5h18L19 16.8Z"/>
+        </svg>
+        <span class="notification-btn__badge" data-notificaciones-total>1</span>
+      </button>
+
+      <div class="notification-panel" id="panelNotificaciones" hidden>
+        <div class="notification-panel__head">
+          <strong>Notificaciones</strong>
+          <span>1 pendiente</span>
+        </div>
+
+        <div class="notification-item" id="notificacionEncuesta"
+             data-id="{{ encuesta_pendiente.id_reserva }}">
+          <button type="button" class="notification-item__close" data-cerrar-notificacion aria-label="Quitar notificación">×</button>
+          <span class="eyebrow">ENCUESTA PENDIENTE</span>
+          <strong>¿Cómo fue {{ encuesta_pendiente.paquete }}?</strong>
+          <p>Tu viaje terminó. Cuéntanos qué tal fue tu experiencia.</p>
+          <div class="notification-item__actions">
+            <button type="button" class="btn btn-primary btn-sm" data-abrir-encuesta>Responder ahora</button>
+            <a class="btn btn-outline btn-sm" href="{{ url_for('encuesta.mostrar_encuesta', id_reserva=encuesta_pendiente.id_reserva) }}">Encuesta detallada</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <a href="
+        {% if rol == 'cliente' %}
+            {{ url_for('home.perfil') }}
+        {% elif rol == 'admin' %}
+            {{ url_for('dashboard.mostrar_panel') }}
+        {% elif rol == 'guia' %}
+          {{ url_for('home.perfil') }}
+        {% elif rol == 'proveedor' %}
+          {{ url_for('home.perfil') }}
+        {% else %}
+          {{ url_for('home.home') }}
+        {% endif %}" class="user-chip">
+
+    <span class="user-chip__avatar">👤</span>
+    <span>{{ usuario.get('nombre', 'Usuario') }}</span>
+
+</a>
+
+    <a href="{{ url_for('home.logout') }}" class="btn btn-ghost btn-sm">
+      Salir
+    </a>
+
+  {% else %}
+
+    <a href="{{ url_for('auth.mostrar_login') }}" class="btn btn-outline btn-sm">
+      Iniciar sesión
+    </a>
+
+    <a href="{{ url_for('auth.mostrar_registro') }}" class="btn btn-primary btn-sm">
+      Crear cuenta
+    </a>
+
+  {% endif %}
+
+</div>
+
+    </div>
+  </nav>
+</header>
+
+<main>
+  {% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% if mensajes %}
+      <div class="container flash-messages">
+        {% for categoria, mensaje in mensajes %}
+          <div class="alert {{ 'alert-error' if categoria == 'error' else 'alert-success' }}">
+            {{ mensaje }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}
+
+  {% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="site-footer__top">
+      <div class="site-footer__brand"><p>Viajes por Colombia con más claridad, más opciones y una experiencia más humana.</p></div>
+      {% set rol_footer = session.get('usuario', {}).get('rol') %}
+      {% if rol_footer != 'admin' %}
+      <div><span class="site-footer__label">Explora</span><a href="{{ url_for('paquetes.listar_catalogo') }}">Paquetes</a><a href="{{ url_for('destinos.listar_catalogo') }}">Destinos</a><a href="{{ url_for('paquetes.comparar') }}">Comparar</a></div>
+      {% endif %}
+      <div><span class="site-footer__label">Ayuda</span><a href="{{ url_for('auth.mostrar_login') }}">Iniciar sesión</a><a href="{{ url_for('auth.mostrar_registro') }}">Crear cuenta</a></div>
+<div class="payment-block">
+    <span class="site-footer__label">Medio de pago</span>
+    <div class="payment-direct">
+        <span>💳</span>
+        <strong>Pago seguro con Turismo Mágico</strong>
+    </div>
+    <small>MAREVA no recibe pagos directamente. El cobro se realiza a nombre de Turismo Mágico por Nequi, PSE o tarjeta, con confirmación por correo.</small>
+</div>
+<div class="video-block">
+    <span class="site-footer__label">Guía en video</span>
+    <button type="button" class="video-block__button" data-abrir-video>▶ Ver cómo reservar</button>
+    <small>Recorre MAREVA en 2 minutos: reserva, pago y encuesta.</small>
+</div>
+    </div>
+    <div class="site-footer__bottom"><span>© 2026 MAREVA · Caribe colombiano</span><span>🔒 Navegación segura · Información clara antes de reservar</span></div>
+  </div>
+</footer>
+
+{% if encuesta_pendiente %}
+<div class="survey-modal" id="modalEncuesta" data-id="{{ encuesta_pendiente.id_reserva }}"
+     data-action="{{ url_for('encuesta.guardar_encuesta_rapida', id_reserva=encuesta_pendiente.id_reserva) }}"
+     data-descartar="{{ url_for('encuesta.descartar_encuesta', id_reserva=encuesta_pendiente.id_reserva) }}"
+     role="dialog" aria-modal="true" aria-labelledby="tituloEncuesta">
+  <div class="survey-modal__backdrop" data-cerrar-encuesta></div>
+  <div class="survey-modal__card">
+    <button type="button" class="survey-modal__close" data-cerrar-encuesta aria-label="Cerrar encuesta">×</button>
+    <span class="eyebrow">TU VIAJE TERMINÓ</span>
+    <h2 id="tituloEncuesta">¿Cómo fue {{ encuesta_pendiente.paquete }}?</h2>
+    <p class="muted">Responde solo lo que quieras: una valoración, un comentario o ambos. Tu opinión aparecerá en la tarjeta del paquete.</p>
+
+    <label class="field-label">Valoración general (opcional)</label>
+    <div class="review-stars" data-star-picker data-name="calificacion" data-value="0">
+      {% for i in range(1, 6) %}
+        <button type="button" data-star="{{ i }}" aria-label="{{ i }} estrellas">★</button>
+      {% endfor %}
+      <input type="hidden" name="calificacion" value="0">
+      <span class="review-stars__label">Elige tu nota</span>
+    </div>
+
+    <label class="field-label">Atención del servicio (opcional)</label>
+    <div class="review-stars" data-star-picker data-name="calificacion_servicio" data-value="0">
+      {% for i in range(1, 6) %}
+        <button type="button" data-star="{{ i }}" aria-label="{{ i }} estrellas">★</button>
+      {% endfor %}
+      <input type="hidden" name="calificacion_servicio" value="">
+      <span class="review-stars__label">Elige tu nota</span>
+    </div>
+
+    <label class="field-label" for="tituloEncuestaRapida">Título (opcional)</label>
+    <input id="tituloEncuestaRapida" type="text" data-campo="titulo" maxlength="120" placeholder="Resume tu experiencia">
+
+    <label class="field-label" for="comentarioEncuestaRapida">Comentario (opcional)</label>
+    <textarea id="comentarioEncuestaRapida" data-campo="comentario" maxlength="1200" placeholder="¿Qué te gustó? ¿Qué mejorarías?"></textarea>
+
+    <button type="button" class="btn btn-primary btn-block" id="enviarEncuestaRapida">Enviar mi opinión</button>
+    <a class="btn btn-outline btn-block" href="{{ url_for('encuesta.mostrar_encuesta', id_reserva=encuesta_pendiente.id_reserva) }}">Responder encuesta detallada</a>
+  </div>
+</div>
+{% endif %}
+
+<div class="video-modal" id="modalVideo" role="dialog" aria-modal="true" aria-labelledby="tituloVideo" hidden>
+  <div class="video-modal__backdrop" data-cerrar-video></div>
+  <div class="video-modal__card">
+    <div class="video-modal__header">
+      <div>
+        <span class="video-modal__eyebrow">MAREVA EN 2 MINUTOS</span>
+        <h2 id="tituloVideo">Así funciona MAREVA</h2>
+      </div>
+      <button type="button" class="video-modal__close" data-cerrar-video aria-label="Cerrar video">×</button>
+    </div>
+    <video id="reproductorVideo" class="video-modal__player" controls preload="metadata" playsinline src="{{ url_for('static', filename='videos/manual_usuario_cliente.mp4') }}"></video>
+    <p class="video-modal__hint">Usa los controles del reproductor para pausar, subir o bajar el volumen y ampliar el video.</p>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("[data-star-picker]").forEach((picker) => {
+        const input = picker.querySelector("input[type=hidden]");
+        const label = picker.querySelector(".review-stars__label");
+        const buttons = Array.from(picker.querySelectorAll("button[data-star]"));
+
+        const pintar = (valor) => {
+            buttons.forEach((boton) => {
+                boton.classList.toggle("is-active", Number(boton.dataset.star) <= valor);
+            });
+            label.textContent = valor ? valor + " de 5" : "Elige tu nota";
+        };
+
+        buttons.forEach((boton) => {
+            boton.addEventListener("click", () => {
+                const valor = Number(boton.dataset.star);
+                input.value = valor;
+                picker.dataset.value = valor;
+                pintar(valor);
+            });
+        });
+    });
+
+    const modal = document.getElementById("modalEncuesta");
+    if (!modal) return;
+
+    const idReserva = modal.dataset.id;
+    const wrapNotificaciones = document.getElementById("notificacionesWrap");
+    const botonNotificaciones = document.getElementById("btnNotificaciones");
+    const panelNotificaciones = document.getElementById("panelNotificaciones");
+    const notificacionEncuesta = document.getElementById("notificacionEncuesta");
+    const badgeNotificaciones = document.querySelector("[data-notificaciones-total]");
+
+    const cerrarPanel = () => {
+        if (!panelNotificaciones) return;
+        panelNotificaciones.classList.remove("is-open");
+        panelNotificaciones.hidden = true;
+        if (botonNotificaciones) botonNotificaciones.setAttribute("aria-expanded", "false");
+    };
+
+    const actualizarNotificaciones = () => {
+        const visibles = panelNotificaciones
+            ? panelNotificaciones.querySelectorAll(".notification-item").length
+            : 0;
+        if (badgeNotificaciones) {
+            badgeNotificaciones.textContent = String(visibles);
+            badgeNotificaciones.hidden = visibles === 0;
+        }
+        if (!visibles && wrapNotificaciones) wrapNotificaciones.hidden = true;
+    };
+
+    const descartar = () => {
+        fetch(modal.dataset.descartar, {method: "POST"}).catch(() => {});
+        if (notificacionEncuesta) {
+            notificacionEncuesta.remove();
+            actualizarNotificaciones();
+        }
+        modal.classList.remove("is-visible");
+    };
+
+    const abrirModal = () => {
+        cerrarPanel();
+        modal.classList.add("is-visible");
+    };
+
+    window.setTimeout(() => modal.classList.add("is-visible"), 120);
+
+    modal.querySelectorAll("[data-cerrar-encuesta]").forEach((elemento) => {
+        elemento.addEventListener("click", descartar);
+    });
+
+    if (botonNotificaciones && panelNotificaciones) {
+        botonNotificaciones.addEventListener("click", (evento) => {
+            evento.stopPropagation();
+            const abierto = panelNotificaciones.hidden;
+            panelNotificaciones.hidden = !abierto;
+            panelNotificaciones.classList.toggle("is-open", abierto);
+            botonNotificaciones.setAttribute("aria-expanded", String(abierto));
+        });
+
+        document.addEventListener("click", (evento) => {
+            if (wrapNotificaciones && !wrapNotificaciones.contains(evento.target)) {
+                cerrarPanel();
+            }
+        });
+
+        document.addEventListener("keydown", (evento) => {
+            if (evento.key === "Escape") {
+                cerrarPanel();
+                if (modal.classList.contains("is-visible")) {
+                    descartar();
+                }
+            }
+        });
+    }
+
+    if (notificacionEncuesta) {
+        notificacionEncuesta.querySelectorAll("[data-cerrar-notificacion]").forEach((elemento) => {
+            elemento.addEventListener("click", (evento) => {
+                evento.stopPropagation();
+                descartar();
+            });
+        });
+
+        notificacionEncuesta.querySelectorAll("[data-abrir-encuesta]").forEach((elemento) => {
+            elemento.addEventListener("click", abrirModal);
+        });
+    }
+
+    const botonEnviar = document.getElementById("enviarEncuestaRapida");
+    botonEnviar.addEventListener("click", async () => {
+        const calificacion = modal.querySelector('[data-name="calificacion"] input').value;
+        const servicio = modal.querySelector('[data-name="calificacion_servicio"] input').value;
+        const titulo = modal.querySelector('[data-campo="titulo"]').value.trim();
+        const comentario = modal.querySelector('[data-campo="comentario"]').value.trim();
+
+        if (!calificacion || calificacion === "0") {
+            if (!servicio && !titulo && !comentario) {
+                window.alert("Responde al menos una opción de la encuesta.");
+                return;
+            }
+        }
+
+        botonEnviar.disabled = true;
+        botonEnviar.textContent = "Enviando…";
+
+        try {
+            const respuesta = await fetch(modal.dataset.action, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    calificacion: calificacion && calificacion !== "0" ? Number(calificacion) : null,
+                    calificacion_servicio: servicio ? Number(servicio) : null,
+                    titulo: titulo,
+                    comentario: comentario,
+                }),
+            });
+            const datos = await respuesta.json();
+
+            if (!datos.ok) {
+                window.alert(datos.error || "No fue posible guardar tu opinión.");
+                botonEnviar.disabled = false;
+                botonEnviar.textContent = "Enviar mi opinión";
+                return;
+            }
+
+            descartar();
+            window.location.reload();
+        } catch (error) {
+            window.alert("No fue posible conectar con el servidor.");
+            botonEnviar.disabled = false;
+            botonEnviar.textContent = "Enviar mi opinión";
+        }
+    });
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const modal = document.getElementById("modalVideo");
+    const reproductor = document.getElementById("reproductorVideo");
+    if (!modal || !reproductor) return;
+
+    let botonAnterior = null;
+
+    const abrir = (evento) => {
+        botonAnterior = evento.currentTarget;
+        modal.hidden = false;
+        document.body.classList.add("video-modal-open");
+        reproductor.currentTime = 0;
+        reproductor.play().catch(() => {});
+        modal.querySelector(".video-modal__close").focus();
+    };
+
+    const cerrar = () => {
+        reproductor.pause();
+        modal.hidden = true;
+        document.body.classList.remove("video-modal-open");
+        if (botonAnterior) botonAnterior.focus();
+    };
+
+    document.querySelectorAll("[data-abrir-video]").forEach((boton) => {
+        boton.addEventListener("click", abrir);
+    });
+
+    modal.querySelectorAll("[data-cerrar-video]").forEach((elemento) => {
+        elemento.addEventListener("click", cerrar);
+    });
+
+    document.addEventListener("keydown", (evento) => {
+        if (evento.key === "Escape" && !modal.hidden) cerrar();
+    });
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/intlTelInput.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+</body>
+</html>

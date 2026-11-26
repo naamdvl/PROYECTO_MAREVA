@@ -1,0 +1,970 @@
+
+{% extends "base.html" %}
+
+{% block title %}Mi perfil · MAREVA{% endblock %}
+
+{% block content %}
+
+<section class="profile-page">
+
+    <div class="container profile-container">
+
+        <!-- =====================================================
+             ENCABEZADO DEL PERFIL
+        ====================================================== -->
+
+        <header class="profile-header">
+
+            <div class="profile-header__content">
+
+                <span class="eyebrow">
+                    MI CUENTA MAREVA
+                </span>
+
+                <h1>
+                    Hola, {{ usuario.nombre|default('Viajero') }} 👋
+                </h1>
+
+                <p>
+                    Gestiona tus datos y consulta tus próximos viajes.
+                </p>
+
+                {% if usuario.correo %}
+                    <div class="profile-email">
+                        <span>✉️</span>
+                        {{ usuario.correo }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+            <div class="profile-avatar">
+                <span>
+                    {{ usuario.nombre|default('V')|first|upper }}
+                </span>
+            </div>
+
+        </header>
+
+
+        <!-- =====================================================
+             INFORMACIÓN PRINCIPAL
+        ====================================================== -->
+
+        <section class="profile-grid">
+
+            <!-- ================= DATOS PERSONALES ================= -->
+
+            <article class="profile-card profile-personal-card">
+
+                <span class="eyebrow">
+                    DATOS PERSONALES
+                </span>
+
+                <h2>
+                    Información de cuenta
+                </h2>
+
+                <div class="profile-info">
+
+                    <div>
+                        <small>Nombre</small>
+
+                        <strong>
+                            {{ usuario.nombre|default('—') }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <small>Apellido</small>
+
+                        <strong>
+                            {{ usuario.apellido|default('—') }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <small>Correo electrónico</small>
+
+                        <strong>
+                            {{ usuario.correo|default('—') }}
+                        </strong>
+                    </div>
+
+                </div>
+
+                <div class="profile-edit-header">
+                    <span class="profile-edit-hint">¿Quieres cambiar tus datos?</span>
+                    <button
+                        type="button"
+                        id="toggleEditarPerfil"
+                        class="profile-edit-toggle"
+                        aria-expanded="false"
+                        aria-controls="profileEditForms"
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Zm17.71-10.96a1 1 0 0 0 0-1.41l-2.59-2.59a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.08-1.58Z"/>
+                        </svg>
+                        <span id="toggleEditarPerfilTexto">Editar perfil</span>
+                    </button>
+                </div>
+
+                <div id="profileEditForms" class="profile-edit-forms" hidden>
+
+                    <form
+                        class="profile-edit-form"
+                        method="post"
+                        action="{{ url_for('home.actualizar_datos_personales') }}"
+                    >
+                        <h3>Editar nombres</h3>
+
+                        <label for="perfilNombre">Nombre</label>
+                        <input
+                            type="text"
+                            id="perfilNombre"
+                            name="nombre"
+                            value="{{ usuario.nombre|default('') }}"
+                            minlength="2"
+                            required
+                        >
+
+                        <label for="perfilApellido">Apellido</label>
+                        <input
+                            type="text"
+                            id="perfilApellido"
+                            name="apellido"
+                            value="{{ usuario.apellido|default('') }}"
+                            minlength="2"
+                            required
+                        >
+
+                        <button type="submit" class="btn btn-primary">
+                            Guardar nombres
+                        </button>
+                    </form>
+
+                    <form
+                        class="profile-edit-form"
+                        method="post"
+                        action="{{ url_for('home.actualizar_correo') }}"
+                        id="formularioCorreoPerfil"
+                    >
+                        <h3>Cambiar correo</h3>
+
+                        <label for="nuevoCorreoPerfil">Nuevo correo</label>
+                        <input
+                            type="email"
+                            id="nuevoCorreoPerfil"
+                            name="correo"
+                            value="{{ usuario.correo|default('') }}"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            id="enviarCodigoPerfilBtn"
+                            class="btn btn-outline"
+                        >
+                            Enviar código de verificación
+                        </button>
+
+                        <div id="verificacionCorreoPerfil" hidden>
+                            <label for="codigoCorreoPerfil">Código de 6 dígitos</label>
+                            <input
+                                type="text"
+                                id="codigoCorreoPerfil"
+                                name="codigo"
+                                inputmode="numeric"
+                                maxlength="6"
+                                pattern="[0-9]{6}"
+                                placeholder="000000"
+                            >
+
+                            <button
+                                type="button"
+                                id="verificarCodigoPerfilBtn"
+                                class="btn btn-outline"
+                            >
+                                Verificar código
+                            </button>
+                        </div>
+
+                        <p id="estadoCorreoPerfil" class="profile-edit-status"></p>
+
+                        <button
+                            type="submit"
+                            id="guardarCorreoPerfilBtn"
+                            class="btn btn-primary"
+                            disabled
+                        >
+                            Guardar nuevo correo
+                        </button>
+                    </form>
+
+                    <form
+                        class="profile-edit-form"
+                        method="post"
+                        action="{{ url_for('home.cambiar_password') }}"
+                    >
+                        <h3>Cambiar contraseña</h3>
+
+                        <label for="passwordActualPerfil">Contraseña actual</label>
+                        <input
+                            type="password"
+                            id="passwordActualPerfil"
+                            name="password_actual"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <label for="passwordNuevaPerfil">Nueva contraseña</label>
+                        <input
+                            type="password"
+                            id="passwordNuevaPerfil"
+                            name="password_nueva"
+                            minlength="8"
+                            autocomplete="new-password"
+                            required
+                        >
+
+                        <label for="passwordConfirmacionPerfil">Confirmar contraseña</label>
+                        <input
+                            type="password"
+                            id="passwordConfirmacionPerfil"
+                            name="password_confirmacion"
+                            minlength="8"
+                            autocomplete="new-password"
+                            required
+                        >
+
+                        <button type="submit" class="btn btn-primary">
+                            Actualizar contraseña
+                        </button>
+                    </form>
+
+                </div>
+
+            </article>
+
+
+            <!-- ================= NIVEL MAREVA ================= -->
+
+            <article class="profile-card profile-level-card">
+
+                <span class="eyebrow">
+                    NIVEL MAREVA
+                </span>
+
+                <h2>
+                    Tu progreso
+                </h2>
+
+                <div class="level-badge">
+                    <span>✦</span>
+                    Explorador
+                </div>
+
+                <h3>
+                    Explorador
+                </h3>
+
+                <p>
+                    Sigue viajando con MAREVA y desbloquea nuevos
+                    beneficios, insignias y experiencias.
+                </p>
+
+                <a
+                    href="{{ url_for('gamificacion.niveles') }}"
+                    class="btn-outline"
+                >
+                    Ver mi progreso
+                    <span>→</span>
+                </a>
+
+            </article>
+
+        </section>
+
+
+        <!-- =====================================================
+             MIS RESERVAS
+        ====================================================== -->
+
+        <section class="profile-reservations">
+
+            <div class="profile-section-heading">
+
+                <div>
+
+                    <span class="eyebrow">
+                        MIS VIAJES
+                    </span>
+
+                    <h2>
+                        Mis reservas
+                    </h2>
+
+                    <p>
+                        Aquí encontrarás todos los viajes que has
+                        reservado con MAREVA.
+                    </p>
+
+                </div>
+
+
+                {% if reservas %}
+
+                    <div class="reservation-counter">
+
+                        <strong>
+                            {{ reservas|length }}
+                        </strong>
+
+                        <span>
+                            {% if reservas|length == 1 %}
+                                reserva
+                            {% else %}
+                                reservas
+                            {% endif %}
+                        </span>
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- =================================================
+                 RESERVAS EXISTENTES
+            ================================================== -->
+
+            {% if reservas %}
+
+                <div class="reservations-grid">
+
+                    {% for reserva in reservas %}
+
+                        {% set estado = reserva.estado|default('solicitada')|lower|trim %}
+
+                        <article
+                            class="reservation-card reservation-card--{{ estado|replace(' ', '-') }}"
+                        >
+
+                            <!-- ================= CABECERA ================= -->
+
+                            <div class="reservation-card__header">
+
+                                <div class="reservation-card__destination">
+
+                                    <div class="reservation-card__icon">
+                                        🌴
+                                    </div>
+
+                                    <div>
+
+                                        <span class="reservation-card__eyebrow">
+                                            PAQUETE MAREVA
+                                        </span>
+
+                                        <h3>
+                                            {{ reserva.paquete_nombre|default('Viaje MAREVA') }}
+                                        </h3>
+
+                                        {% if reserva.destino %}
+                                            <p>
+                                                📍 {{ reserva.destino }}
+                                            </p>
+                                        {% endif %}
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- =================================================
+                                     ACCIONES DE LA RESERVA
+                                     BOTÓN DE PAGO + ESTADO
+                                ================================================== -->
+
+                                <div class="reservation-card__actions">
+
+                                    {% if estado == 'solicitada' %}
+
+                                        <a
+                                            href="{{ url_for('reserva.pago', id_reserva=reserva.id_reserva) }}"
+                                            class="reservation-pay-button"
+                                        >
+
+                                            <span>
+                                                Pagar tu reserva
+                                            </span>
+
+                                            <span class="reservation-pay-button__arrow">
+                                                →
+                                            </span>
+                                        </a>
+
+                                    {% elif estado == 'pendiente a pago' %}
+
+                                        <a
+                                            href="{{ url_for('reserva.pago', id_reserva=reserva.id_reserva) }}"
+                                            class="reservation-pay-button"
+                                        >
+                                            <span>
+                                                Pagar tu reserva
+                                            </span>
+
+                                            <span class="reservation-pay-button__arrow">
+                                                →
+                                            </span>
+                                        </a>
+
+                                    {% elif estado == 'pagada' %}
+
+                                        <span class="reservation-pay-button">
+                                           Pago verificado
+                                        </span>
+
+                                    {% elif estado == 'completada' %}
+
+                                        <a
+                                            href="{{ url_for('encuesta.mostrar_encuesta', id_reserva=reserva.id_reserva) }}"
+                                            class="reservation-pay-button"
+                                        >
+                                            <span>
+                                                Encuesta de satisfaccion
+                                            </span>
+
+                                            <span class="reservation-pay-button__arrow">
+                                                →
+                                            </span>
+                                        </a>
+                                    {% elif estado == 'encuestada' %}
+
+                                            <span class="reservation-pay-button">
+                                               Gracias por contestar la encuesta de satisfaccion
+                                            </span>
+                                    <!--CREAR MAS ELIF PARA LA ENCUESTA, QUE VERIFIQUE EL ESTADO COMO ARRIBA Y QUE VERIFIQUE SI ESTA COMPLETADA PARA MOSTRAR EL BOTON DE ENCUESTA-->
+                                    {% endif %}
+
+
+                                    <div class="reservation-status reservation-status--{{ estado|replace(' ', '-') }}">
+
+                                        <span class="reservation-status__dot"></span>
+
+                                        <span>
+
+                                            {% if estado == 'solicitada' %}
+
+                                                Pendiente de pago
+
+                                            {% elif estado == 'pendiente a pago' %}
+
+                                                Pendiente de pago
+
+                                            {% elif estado == 'pagada' %}
+
+                                                Pagada
+
+                                            {% elif estado == 'confirmada' %}
+
+                                                Confirmada
+
+                                            {% elif estado == 'en_proceso' %}
+
+                                                En proceso
+
+                                            {% elif estado == 'completada' %}
+
+                                                Completada
+
+                                            {% elif estado == 'cancelada' %}
+
+                                                Cancelada
+
+                                            {% else %}
+
+                                                {{ reserva.estado|default('En proceso')|capitalize }}
+
+                                            {% endif %}
+
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            {% if estado in ['solicitada', 'pendiente a pago'] %}
+
+                                <div class="reservation-payment-alert">
+
+                                    <div class="reservation-payment-alert__info">
+
+                                        <span class="reservation-payment-alert__icon">
+                                            ⏳
+                                        </span>
+
+                                        <div>
+                                            <strong>Paga cuanto antes</strong>
+                                            <span>
+                                                Tu reserva está pendiente de pago
+                                                con Turismo Mágico. Si no la pagas,
+                                                puedes cancelarla desde aquí.
+                                            </span>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="reservation-payment-alert__actions">
+
+                                        <a
+                                            href="{{ url_for('reserva.pago', id_reserva=reserva.id_reserva) }}"
+                                            class="reservation-pay-button"
+                                        >
+                                            <span>Ir a pagar</span>
+                                            <span class="reservation-pay-button__arrow">→</span>
+                                        </a>
+
+                                        <form
+                                            method="post"
+                                            action="{{ url_for('reserva.cancelar_reserva_cliente', id_reserva=reserva.id_reserva) }}"
+                                            onsubmit="return confirm('¿Seguro que deseas cancelar esta reserva?');"
+                                        >
+                                            <button
+                                                type="submit"
+                                                class="reservation-cancel-button"
+                                            >
+                                                Cancelar reserva
+                                            </button>
+                                        </form>
+
+                                    </div>
+
+                                </div>
+
+                            {% endif %}
+
+
+                            <!-- =================================================
+                                 CUERPO DE LA CARD
+                             ================================================== -->
+
+                            <div class="reservation-card__body">
+
+
+                                <!-- ================= FECHAS ================= -->
+
+                                <div class="reservation-detail">
+
+                                    <span class="reservation-detail__icon">
+                                        📅
+                                    </span>
+
+                                    <div>
+
+                                        <small>
+                                            FECHA DEL VIAJE
+                                        </small>
+
+                                        <strong>
+
+                                            {% if reserva.fecha_salida %}
+
+                                                {{ reserva.fecha_salida.strftime('%d/%m/%Y') }}
+
+                                                {% if reserva.fecha_regreso %}
+
+                                                    <span class="date-arrow">
+                                                        →
+                                                    </span>
+
+                                                    {{ reserva.fecha_regreso.strftime('%d/%m/%Y') }}
+
+                                                {% endif %}
+
+                                            {% elif reserva.fecha_viaje %}
+
+                                                {{ reserva.fecha_viaje.strftime('%d/%m/%Y') }}
+
+                                            {% else %}
+
+                                                Fecha por confirmar
+
+                                            {% endif %}
+
+                                        </strong>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- ================= VIAJEROS ================= -->
+
+                                {% set adultos = reserva.cant_adultos|default(0)|int %}
+                                {% set menores = reserva.cant_menores|default(0)|int %}
+                                {% set total = adultos + menores %}
+
+                                <div class="reservation-detail">
+
+                                    <span class="reservation-detail__icon">
+                                        👥
+                                    </span>
+
+                                    <div>
+
+                                        <small>
+                                            VIAJEROS
+                                        </small>
+
+                                        <strong>
+
+                                            {{ total }}
+
+                                            {% if total == 1 %}
+                                                viajero
+                                            {% else %}
+                                                viajeros
+                                            {% endif %}
+
+                                        </strong>
+
+                                        <span class="reservation-detail__sub">
+
+                                            {{ adultos }}
+                                            adulto{% if adultos != 1 %}s{% endif %}
+
+                                            {% if menores > 0 %}
+
+                                                ·
+
+                                                {{ menores }}
+                                                menor{% if menores != 1 %}es{% endif %}
+
+                                            {% endif %}
+
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- ================= CÓDIGO ================= -->
+
+                                <div class="reservation-detail">
+
+                                    <span class="reservation-detail__icon">
+                                        🎫
+                                    </span>
+
+                                    <div>
+
+                                        <small>
+                                            CÓDIGO DE RESERVA
+                                        </small>
+
+                                        <strong class="reservation-code">
+                                            {{ reserva.codigo_unico|default('—') }}
+                                        </strong>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- ================= TOTAL ================= -->
+
+                                <div class="reservation-detail reservation-detail--price">
+
+                                    <span class="reservation-detail__icon">
+                                        💰
+                                    </span>
+
+                                    <div>
+
+                                        <small>
+                                            TOTAL
+                                        </small>
+
+                                        <strong>
+
+                                            {% if reserva.precio_total is not none %}
+
+                                                ${{ "{:,.0f}".format(
+                                                    reserva.precio_total|float
+                                                ).replace(',', '.') }} COP
+
+                                            {% else %}
+
+                                                Por confirmar
+
+                                            {% endif %}
+
+                                        </strong>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- =================================================
+                                 PIE
+                            ================================================== -->
+
+                            <footer class="reservation-card__footer">
+
+                                <div>
+
+                                    <span>
+                                        Reserva #{{ reserva.id_reserva }}
+                                    </span>
+
+                                    {% if reserva.fecha_reserva %}
+
+                                        <span class="reservation-card__date">
+
+                                            • Reservada el
+                                            {{ reserva.fecha_reserva.strftime('%d/%m/%Y') }}
+
+                                        </span>
+
+                                    {% endif %}
+
+                                </div>
+
+                                {% if reserva.codigo_unico %}
+
+                                    <span class="reservation-card__secure">
+                                        ✓ Registrada
+                                    </span>
+
+                                {% endif %}
+
+                            </footer>
+
+                        </article>
+
+                    {% endfor %}
+
+                </div>
+
+
+            {% else %}
+
+                <!-- =================================================
+                     SIN RESERVAS
+                ================================================== -->
+
+                <div class="reservations-empty">
+
+                    <div class="reservations-empty__visual">
+
+                        <div class="reservations-empty__circle">
+                            🧳
+                        </div>
+
+                        <span class="empty-decoration empty-decoration--one">
+                            ✦
+                        </span>
+
+                        <span class="empty-decoration empty-decoration--two">
+                            •
+                        </span>
+
+                    </div>
+
+
+                    <div class="reservations-empty__content">
+
+                        <span class="eyebrow">
+                            TU PRÓXIMA AVENTURA
+                        </span>
+
+                        <h3>
+                            Todavía no tienes reservas
+                        </h3>
+
+                        <p>
+                            Explora nuestros paquetes y encuentra
+                            el destino perfecto para tu próxima aventura.
+                            Cuando hagas una reserva, aparecerá
+                            automáticamente aquí.
+                        </p>
+
+                        <a
+                            href="{{ url_for('paquetes.listar_catalogo') }}"
+                            class="btn btn-primary profile-explore-button"
+                        >
+                            Explorar paquetes
+                            <span>→</span>
+                        </a>
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- =====================================================
+             ACCIONES RÁPIDAS
+        ====================================================== -->
+
+        <section class="profile-actions">
+
+            <a
+                href="{{ url_for('gamificacion.niveles') }}"
+                class="profile-action"
+            >
+
+                <div class="profile-action__icon">
+                    🏆
+                </div>
+
+                <strong>
+                    Niveles e insignias
+                </strong>
+
+                <small>
+                    Consulta tus logros y progreso
+                </small>
+
+            </a>
+
+        </section>
+
+    </div>
+
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const toggleEditar = document.getElementById("toggleEditarPerfil");
+    const panelEdicion = document.getElementById("profileEditForms");
+    const textoToggle = document.getElementById("toggleEditarPerfilTexto");
+
+    if (toggleEditar && panelEdicion) {
+        toggleEditar.addEventListener("click", function () {
+            const abierto = !panelEdicion.hidden;
+            panelEdicion.hidden = abierto;
+            toggleEditar.setAttribute("aria-expanded", String(!abierto));
+            if (textoToggle) textoToggle.textContent = abierto ? "Editar perfil" : "Ocultar edición";
+            if (!abierto) panelEdicion.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+    }
+
+    const correoInput = document.getElementById("nuevoCorreoPerfil");
+    const enviarBtn = document.getElementById("enviarCodigoPerfilBtn");
+    const bloqueCodigo = document.getElementById("verificacionCorreoPerfil");
+    const codigoInput = document.getElementById("codigoCorreoPerfil");
+    const verificarBtn = document.getElementById("verificarCodigoPerfilBtn");
+    const guardarBtn = document.getElementById("guardarCorreoPerfilBtn");
+    const estado = document.getElementById("estadoCorreoPerfil");
+
+    if (!correoInput || !enviarBtn || !bloqueCodigo || !codigoInput || !verificarBtn || !guardarBtn || !estado) {
+        return;
+    }
+
+    function mostrarEstado(mensaje, esError) {
+        estado.textContent = mensaje;
+        estado.style.color = esError ? "#b42318" : "#0f766e";
+    }
+
+    correoInput.addEventListener("input", function () {
+        bloqueCodigo.hidden = true;
+        guardarBtn.disabled = true;
+        mostrarEstado("", false);
+    });
+
+    enviarBtn.addEventListener("click", async function () {
+        const correo = correoInput.value.trim().toLowerCase();
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            mostrarEstado("Escribe un correo válido.", true);
+            return;
+        }
+
+        enviarBtn.disabled = true;
+        mostrarEstado("Enviando código...", false);
+
+        try {
+            const respuesta = await fetch("{{ url_for('auth.enviar_codigo_correo') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    correo: correo,
+                    proposito: "perfil"
+                })
+            });
+
+            const datos = await respuesta.json();
+
+            if (!respuesta.ok || !datos.ok) {
+                mostrarEstado(datos.error || "No fue posible enviar el código.", true);
+                return;
+            }
+
+            bloqueCodigo.hidden = false;
+            codigoInput.focus();
+            mostrarEstado(datos.mensaje || "Revisa tu correo.", false);
+        } catch (error) {
+            mostrarEstado("No fue posible conectar con el servicio de correo.", true);
+        } finally {
+            enviarBtn.disabled = false;
+        }
+    });
+
+    verificarBtn.addEventListener("click", async function () {
+        const codigo = codigoInput.value.trim();
+
+        if (!/^[0-9]{6}$/.test(codigo)) {
+            mostrarEstado("El código debe tener 6 dígitos.", true);
+            return;
+        }
+
+        verificarBtn.disabled = true;
+        mostrarEstado("Verificando...", false);
+
+        try {
+            const respuesta = await fetch("{{ url_for('auth.confirmar_codigo_correo') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    codigo: codigo,
+                    proposito: "perfil"
+                })
+            });
+
+            const datos = await respuesta.json();
+
+            if (!respuesta.ok || !datos.ok) {
+                mostrarEstado(datos.error || "El código no es correcto.", true);
+                return;
+            }
+
+            guardarBtn.disabled = false;
+            mostrarEstado("Correo verificado. Ya puedes guardarlo.", false);
+        } catch (error) {
+            mostrarEstado("No fue posible verificar el código.", true);
+        } finally {
+            verificarBtn.disabled = false;
+        }
+    });
+});
+</script>
+
+{% endblock %}
+

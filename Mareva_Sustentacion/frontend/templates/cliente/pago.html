@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Pago seguro · Turismo Mágico{% endblock %}
+
+{% block content %}
+
+<section class="payment-page">
+    <div class="container payment-container">
+
+        <div class="payment-header">
+            <span class="eyebrow">TURISMO MÁGICO · PASARELA SEGURA</span>
+            <h1>Completa tu pago</h1>
+            <p>
+                MAREVA no recibe pagos directamente. Esta pasarela procesa tu reserva
+                a nombre de <strong>Turismo Mágico</strong> y te pedirá confirmación
+                por correo antes de registrar el pago.
+            </p>
+        </div>
+
+        <div class="payment-trust-bar">
+            <span>🔒 Conexión protegida</span>
+            <span>🛡️ Datos cifrados</span>
+            <span>✉️ Confirmación por Gmail</span>
+        </div>
+
+        {% if error %}
+            <div class="payment-error">⚠️ {{ error }}</div>
+        {% endif %}
+
+        <div class="payment-layout">
+            <div class="payment-card">
+                <form
+                    method="POST"
+                    action="{{ url_for('reserva.procesar_pago', id_reserva=reserva.id_reserva) }}"
+                    id="formPago"
+                    novalidate
+                >
+
+                    <div class="payment-section">
+                        <span class="eyebrow">MÉTODO DE PAGO</span>
+                        <h2>¿Cómo deseas pagar?</h2>
+
+                        <div class="payment-methods">
+                            <label class="payment-method">
+                                <input
+                                    type="radio"
+                                    name="metodo_pago"
+                                    value="nequi"
+                                    {% if valores.get('metodo_pago') == 'nequi' %}checked{% endif %}
+                                >
+                                <span class="payment-method__brand payment-method__brand--nequi">N</span>
+                                <span class="payment-method-content">
+                                    <strong>Nequi</strong>
+                                    <span>Paga desde tu celular y confirma por correo.</span>
+                                </span>
+                                <span class="payment-method__tag">Rápido</span>
+                            </label>
+
+                            <label class="payment-method">
+                                <input
+                                    type="radio"
+                                    name="metodo_pago"
+                                    value="pse"
+                                    {% if valores.get('metodo_pago') == 'pse' %}checked{% endif %}
+                                >
+                                <span class="payment-method__brand payment-method__brand--pse">PSE</span>
+                                <span class="payment-method-content">
+                                    <strong>PSE</strong>
+                                    <span>Débito o crédito desde tu banco en Colombia.</span>
+                                </span>
+                                <span class="payment-method__tag">Bancos</span>
+                            </label>
+
+                            <label class="payment-method">
+                                <input
+                                    type="radio"
+                                    name="metodo_pago"
+                                    value="tarjeta"
+                                    {% if valores.get('metodo_pago') == 'tarjeta' %}checked{% endif %}
+                                >
+                                <span class="payment-method__brand payment-method__brand--card">💳</span>
+                                <span class="payment-method-content">
+                                    <strong>Tarjeta de crédito o débito</strong>
+                                    <span>Visa, Mastercard y American Express.</span>
+                                </span>
+                                <span class="payment-method__tag">Popular</span>
+                            </label>
+                        </div>
+                        <small class="field-error" id="error-metodo"></small>
+                    </div>
+
+                    <div class="payment-form-section" id="formNequi" data-metodo="nequi">
+                        <div class="payment-form-heading">
+                            <span class="payment-form-icon">📱</span>
+                            <div>
+                                <h3>Pago con Nequi</h3>
+                                <p>Ingresa el número celular asociado a tu cuenta.</p>
+                            </div>
+                        </div>
+
+                        <label for="nequiTelefono">Número de celular</label>
+                        <div class="input-with-prefix">
+                            <span>+57</span>
+                            <input
+                                type="text"
+                                name="nequi_telefono"
+                                id="nequiTelefono"
+                                inputmode="numeric"
+                                maxlength="10"
+                                placeholder="3001234567"
+                                value="{{ valores.get('nequi_telefono', '') }}"
+                            >
+                        </div>
+                        <small class="field-error" id="error-nequi-telefono"></small>
+                        <small>Debe tener 10 dígitos y comenzar por 3.</small>
+                    </div>
+
+                    <div class="payment-form-section" id="formPse" data-metodo="pse">
+                        <div class="payment-form-heading">
+                            <span class="payment-form-icon">🏦</span>
+                            <div>
+                                <h3>Pago con PSE</h3>
+                                <p>Selecciona tu entidad bancaria y confirma el checkout.</p>
+                            </div>
+                        </div>
+
+                        <label for="pseBanco">Banco</label>
+                        <select name="pse_banco" id="pseBanco">
+                            <option value="">Selecciona tu banco</option>
+                            {% for banco in bancos %}
+                                <option
+                                    value="{{ banco }}"
+                                    {% if valores.get('pse_banco') == banco %}selected{% endif %}
+                                >{{ banco }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="field-error" id="error-pse-banco"></small>
+
+                        <div class="payment-fields-row">
+                            <div>
+                                <label for="pseTipoDocumento">Tipo de documento</label>
+                                <select name="pse_tipo_documento" id="pseTipoDocumento">
+                                    <option value="">Selecciona</option>
+                                    {% for tipo in tipos_documento %}
+                                        <option
+                                            value="{{ tipo }}"
+                                            {% if valores.get('pse_tipo_documento') == tipo %}selected{% endif %}
+                                        >
+                                            {% if tipo == 'CC' %}Cédula de ciudadanía{% endif %}
+                                            {% if tipo == 'CE' %}Cédula de extranjería{% endif %}
+                                            {% if tipo == 'TI' %}Tarjeta de identidad{% endif %}
+                                            {% if tipo == 'NIT' %}NIT{% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="field-error" id="error-pse-tipo"></small>
+                            </div>
+                            <div>
+                                <label for="pseDocumento">Número de documento</label>
+                                <input
+                                    type="text"
+                                    name="pse_documento"
+                                    id="pseDocumento"
+                                    inputmode="numeric"
+                                    maxlength="12"
+                                    placeholder="1234567890"
+                                    value="{{ valores.get('pse_documento', '') }}"
+                                >
+                                <small class="field-error" id="error-pse-documento"></small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="payment-form-section" id="formTarjeta" data-metodo="tarjeta">
+                        <div class="payment-form-heading">
+                            <span class="payment-form-icon">💳</span>
+                            <div>
+                                <h3>Pago con tarjeta</h3>
+                                <p>Completa los datos de tu tarjeta de crédito o débito.</p>
+                            </div>
+                        </div>
+
+                        <div class="card-preview" id="cardPreview">
+                            <div class="card-preview__top">
+                                <span>TURISMO MÁGICO</span>
+                                <span id="cardPreviewType">TARJETA</span>
+                            </div>
+                            <strong id="cardPreviewNumber">•••• •••• •••• ••••</strong>
+                            <div class="card-preview__bottom">
+                                <span id="cardPreviewName">NOMBRE DEL TITULAR</span>
+                                <span id="cardPreviewExpiry">MM/AA</span>
+                            </div>
+                        </div>
+
+                        <label for="tarjetaTipo">Tipo de tarjeta</label>
+                        <select name="tarjeta_tipo" id="tarjetaTipo">
+                            <option value="">Selecciona el tipo</option>
+                            {% for tipo in tipos_tarjeta %}
+                                <option
+                                    value="{{ tipo }}"
+                                    {% if valores.get('tarjeta_tipo') == tipo %}selected{% endif %}
+                                >{{ 'Crédito' if tipo == 'credito' else 'Débito' }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="field-error" id="error-tarjeta-tipo"></small>
+
+                        <label for="tarjetaNumero">Número de tarjeta</label>
+                        <input
+                            type="text"
+                            name="tarjeta_numero"
+                            id="tarjetaNumero"
+                            inputmode="numeric"
+                            maxlength="19"
+                            placeholder="4111 1111 1111 1111"
+                            value="{{ valores.get('tarjeta_numero', '') }}"
+                        >
+                        <small class="field-error" id="error-tarjeta-numero"></small>
+
+                        <label for="tarjetaTitular">Nombre del titular</label>
+                        <input
+                            type="text"
+                            name="tarjeta_titular"
+                            id="tarjetaTitular"
+                            maxlength="80"
+                            placeholder="NOMBRE COMO APARECE EN LA TARJETA"
+                            value="{{ valores.get('tarjeta_titular', '') }}"
+                        >
+                        <small class="field-error" id="error-tarjeta-titular"></small>
+
+                        <div class="payment-fields-row">
+                            <div>
+                                <label for="tarjetaVencimiento">Vencimiento</label>
+                                <input
+                                    type="text"
+                                    name="tarjeta_vencimiento"
+                                    id="tarjetaVencimiento"
+                                    maxlength="5"
+                                    placeholder="12/30"
+                                    value="{{ valores.get('tarjeta_vencimiento', '') }}"
+                                >
+                                <small class="field-error" id="error-tarjeta-vencimiento"></small>
+                            </div>
+                            <div>
+                                <label for="tarjetaCvv">CVV</label>
+                                <input
+                                    type="password"
+                                    name="tarjeta_cvv"
+                                    id="tarjetaCvv"
+                                    inputmode="numeric"
+                                    maxlength="4"
+                                    placeholder="123"
+                                >
+                                <small class="field-error" id="error-tarjeta-cvv"></small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="payment-warning">
+                        <strong>🔒 Pago protegido</strong>
+                        <p>
+                            Te enviaremos un correo para confirmar la operación.
+                            MAREVA no almacena claves bancarias, CVV ni números completos de tarjeta.
+                        </p>
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary btn-lg payment-submit"
+                        id="btnPagar"
+                        disabled
+                    >
+                        Continuar y verificar pago
+                    </button>
+
+                    <a
+                        href="{{ url_for('reserva.confirmacion') }}"
+                        class="btn btn-outline btn-lg"
+                    >
+                        ← Volver a la reserva
+                    </a>
+                </form>
+            </div>
+
+            <aside class="payment-summary">
+                <span class="eyebrow">RESUMEN DE RESERVA</span>
+                <h2>{{ paquete.nombre|default("Paquete turístico") }}</h2>
+
+                {% if paquete.nombre_destino %}
+                    <div class="payment-summary-row">
+                        <span>Destino</span>
+                        <strong>📍 {{ paquete.nombre_destino }}</strong>
+                    </div>
+                {% endif %}
+
+                {% if paquete.duracion_dias is not none %}
+                    <div class="payment-summary-row">
+                        <span>Duración</span>
+                        <strong>{{ paquete.duracion_dias }} días</strong>
+                    </div>
+                {% endif %}
+
+                <div class="payment-summary-row">
+                    <span>Código de reserva</span>
+                    <strong>{{ reserva.codigo_unico|default("Pendiente") }}</strong>
+                </div>
+
+                <div class="payment-summary-row">
+                    <span>Estado</span>
+                    <strong class="summary-status">Pendiente de pago</strong>
+                </div>
+
+                <div class="payment-summary-row">
+                    <span>Beneficiario</span>
+                    <strong>{{ beneficiario_nombre }}</strong>
+                </div>
+
+                <div class="payment-summary-row">
+                    <span>Cuenta</span>
+                    <strong>{{ beneficiario_cuenta }}</strong>
+                </div>
+
+                {% if reserva.viajeros %}
+                    <div class="payment-summary-row">
+                        <span>Viajeros</span>
+                        <strong>{{ reserva.viajeros|length }}</strong>
+                    </div>
+                {% endif %}
+
+                <div class="payment-summary-total">
+                    <span>Total a pagar</span>
+                    <strong>${{ "{:,.0f}".format(monto|float) }}</strong>
+                </div>
+
+                <p class="payment-summary__note">
+                    El pago se acredita a {{ beneficiario_nombre }}. MAREVA actúa
+                    solo como plataforma de reserva.
+                </p>
+            </aside>
+        </div>
+    </div>
+</section>
+
+<script src="{{ url_for('static', filename='js/pago.js') }}"></script>
+
+{% endblock %}

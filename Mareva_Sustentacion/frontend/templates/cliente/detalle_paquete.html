@@ -1,0 +1,2102 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ paquete.nombre }} · MAREVA
+{% endblock %}
+
+{% block content %}
+
+<section class="package-detail-hero">
+    <div class="container package-detail-hero__grid">
+
+        <div class="package-detail-hero__image">
+
+            {% if paquete.imagen_url %}
+                <img
+                    src="{{ url_for('static', filename=paquete.imagen_url) }}"
+                    alt="{{ paquete.nombre }}"
+                >
+
+            {% elif paquete.imagen_principal %}
+                <img
+                    src="{{ url_for('static', filename=paquete.imagen_principal) }}"
+                    alt="{{ paquete.nombre }}"
+                >
+
+            {% else %}
+                <div class="travel-card__fallback">
+                    {{ paquete.emoji|default('✈️') }}
+                </div>
+            {% endif %}
+
+        </div>
+
+        <div class="package-detail-hero__content">
+
+            <span class="eyebrow">
+                {{ paquete.categoria|default('Experiencia')|capitalize }}
+            </span>
+
+            <h1>{{ paquete.nombre }}</h1>
+
+            <p class="package-location">
+                📍 {{ paquete.nombre_destino|default('Destino MAREVA') }}
+                {% if paquete.departamento %}
+                    , {{ paquete.departamento }}
+                {% endif %}
+            </p>
+
+            <p>
+                {{ paquete.descripcion }}
+            </p>
+
+            <div class="package-detail-stats">
+
+                <div>
+                    <span>🗓️</span>
+                    <strong>{{ paquete.duracion_dias|default(0) }} días</strong>
+                    <small>Duración</small>
+                </div>
+
+                <div>
+                    <span>🌙</span>
+                    <strong>{{ paquete.duracion_noches|default(0) }} noches</strong>
+                    <small>Alojamiento</small>
+                </div>
+
+                <div>
+                    <span>✨</span>
+                    <strong>{{ paquete.incluye|length }}</strong>
+                    <small>Servicios incluidos</small>
+                </div>
+
+            </div>
+
+            <div class="package-detail-price">
+                <small>Precio por persona</small>
+                <strong>${{ "{:,.0f}".format(paquete.precio|float) }}</strong>
+            </div>
+
+            {% set promedio_hero = paquete.calificacion_promedio|float|default(0) %}
+            {% set llenas_hero = promedio_hero|round(0, 'floor')|int %}
+            <div class="rating-pill rating-pill--hero" title="Valoración media de los viajeros">
+                <span class="rating-pill__stars">
+                    {% for i in range(1, 6) %}{{ '★' if i <= llenas_hero else '☆' }}{% endfor %}
+                </span>
+                <span>{{ '%.1f'|format(promedio_hero) }}</span>
+                <small>({{ paquete.total_resenas|default(0) }} opiniones)</small>
+                {% if resenas %}
+                    <a href="#opiniones" style="color:inherit;margin-left:.25rem;">Ver reseñas</a>
+                {% endif %}
+            </div>
+
+            <div class="public-booking-note">
+                ✓ Selecciona tu alojamiento, alimentación, transporte y extras.
+                <strong>Al finalizar, si no has iniciado sesión, te pediremos
+                entrar para confirmar tu reserva.</strong>
+            </div>
+
+        </div>
+
+    </div>
+</section>
+
+
+<section class="section">
+
+    <div class="container package-detail-page">
+
+        {% if error %}
+            <div class="alert alert-error" style="grid-column: 1 / -1;">
+                ⚠️ {{ error }}
+            </div>
+        {% endif %}
+
+        <form
+            id="formDetalleReserva"
+            method="POST"
+            action="{{ url_for('reserva.preparar', slug=paquete.slug) }}"
+            class="package-detail-layout"
+        >
+
+        <input type="hidden" name="fecha_salida" id="fechaSalidaInput">
+        <input type="hidden" name="fecha_regreso" id="fechaRegresoInput">
+
+        {% for salida in salidas %}
+        <input type="radio" name="id_salida" value="{{ salida.id_salida }}" class="js-radio-salida" hidden>
+        {% endfor %}
+
+        <main class="package-detail-sections">
+
+            <!-- =====================================================
+                 RESUMEN
+            ====================================================== -->
+
+            <div class="detail-panel detail-panel--wide">
+
+                <span class="eyebrow">INFORMACIÓN DEL VIAJE</span>
+                <h2>¿Qué incluye esta experiencia?</h2>
+
+                <div class="detail-includes">
+
+                    {% if paquete.alojamientos %}
+                    <div>
+                        🏨
+                        <strong>Alojamiento</strong>
+                        <span>{{ paquete.alojamientos|length }} opción(es)</span>
+                    </div>
+                    {% endif %}
+
+                    {% if paquete.alimentacion %}
+                    <div>
+                        🍽️
+                        <strong>Alimentación</strong>
+                        <span>{{ paquete.alimentacion|length }} servicio(s)</span>
+                    </div>
+                    {% endif %}
+
+                    {% if paquete.transportes %}
+                    <div>
+                        🚌
+                        <strong>Transporte</strong>
+                        <span>{{ paquete.transportes|length }} traslado(s)</span>
+                    </div>
+                    {% endif %}
+
+                    {% if paquete.actividades %}
+                    <div>
+                        🎟️
+                        <strong>Actividades</strong>
+                        <span>{{ paquete.actividades|length }} actividad(es)</span>
+                    </div>
+                    {% endif %}
+
+                    {% if paquete.guia %}
+                    <div>
+                        🧭
+                        <strong>Guía turístico</strong>
+                        <span>Servicio de guía incluido</span>
+                    </div>
+                    {% endif %}
+
+                    {% if paquete.seguros %}
+                    <div>
+                        🛡️
+                        <strong>Seguro</strong>
+                        <span>Cobertura incluida</span>
+                    </div>
+                    {% endif %}
+
+                    {% if paquete.servicios_extra %}
+                    <div>
+                        ✨
+                        <strong>Servicios adicionales</strong>
+                        <span>Opciones disponibles</span>
+                    </div>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================================
+                 FECHAS DISPONIBLES
+            ====================================================== -->
+
+            {% if calendario.meses %}
+
+            {% set DIAS_SEMANA = ['LU', 'MA', 'MI', 'JU', 'VI', 'SÁ', 'DO'] %}
+            {% set radios_salida = [] %}
+
+            <div class="detail-panel detail-panel--wide detail-panel--calendar js-date-panel">
+
+                <span class="eyebrow">📅 FECHAS DISPONIBLES</span>
+                <h2>Elige cuándo viajar</h2>
+
+                <div class="date-fields" role="group" aria-label="Rango de viaje">
+                    <button
+                        type="button"
+                        class="date-field is-active js-campo-salida"
+                        aria-expanded="false"
+                        aria-controls="datePicker"
+                    >
+                        <span class="date-field__label">FECHA SALIDA</span>
+                        <span class="date-field__value js-valor-salida">DD-MM-YYYY</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="date-field js-campo-regreso"
+                        aria-expanded="false"
+                        aria-controls="datePicker"
+                    >
+                        <span class="date-field__label">FECHA REGRESO</span>
+                        <span class="date-field__value js-valor-regreso">DD-MM-YYYY</span>
+                    </button>
+                </div>
+
+                <div
+                    class="date-picker js-date-picker"
+                    id="datePicker"
+                    role="group"
+                    aria-label="Seleccionar rango de fechas de viaje"
+                >
+                    <div class="date-picker__card">
+                        <div class="date-picker__head">
+                            <div>
+                                <span class="eyebrow">ELIGE TUS FECHAS</span>
+                                <h3>Salida y regreso</h3>
+                            </div>
+                        </div>
+
+                        <p class="date-picker__hint js-date-hint">Elige la fecha de salida.</p>
+                        <p class="date-picker__error js-date-error" role="alert" hidden></p>
+
+                        <div class="date-picker__months-wrap">
+                            <div class="date-picker__nav-slot date-picker__nav-slot--prev">
+                                <button type="button" class="calendar-nav__btn js-cal-prev" aria-label="Mes anterior">‹</button>
+                            </div>
+
+                        <div class="date-picker__months js-calendario-meses">
+
+                            {% for mes in calendario.meses %}
+
+                            <div class="calendar-month js-mes" data-mes="{{ mes.clave }}" data-indice="{{ loop.index0 }}">
+                                <div class="calendar-month__title">
+                                    <strong>{{ mes.nombre }}</strong> <span>{{ mes.anio }}</span>
+                                </div>
+
+                                <div class="calendar-weekdays" aria-hidden="true">
+                                    {% for d in DIAS_SEMANA %}
+                                    <span class="calendar-weekday">{{ d }}</span>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="calendar-days">
+
+                                    {% for _ in range(mes.offset) %}
+                                    <span class="calendar-day calendar-day--empty" aria-hidden="true"></span>
+                                    {% endfor %}
+
+                                    {% for dia in mes.dias %}
+
+                                    {% set ns = namespace(clases='calendar-day') %}
+                                    {% if dia.pasado %}
+                                        {% set ns.clases = ns.clases ~ ' calendar-day--disabled' %}
+                                    {% else %}
+                                        {% set ns.clases = ns.clases ~ ' calendar-day--available' %}
+                                    {% endif %}
+                                    {% if dia.es_hoy %}
+                                        {% set ns.clases = ns.clases ~ ' calendar-day--today' %}
+                                    {% endif %}
+
+                                    <button
+                                        type="button"
+                                        class="{{ ns.clases }}"
+                                        data-fecha="{{ dia.iso }}"
+                                        data-id-salida="{{ dia.id_salida or '' }}"
+                                        data-regreso-asociado="{{ dia.regreso_asociado }}"
+                                        aria-pressed="false"
+                                        aria-label="{{ dia.dia_semana|capitalize }} {{ dia.dia }} de {{ mes.nombre|lower }} de {{ mes.anio }}"
+                                        {% if dia.pasado %}disabled aria-disabled="true"{% endif %}
+                                    >
+                                        <span class="calendar-day__num">{{ dia.dia }}</span>
+                                        {% if dia.es_hoy %}
+                                        <span class="calendar-day__tag calendar-day__tag--today">HOY</span>
+                                        {% endif %}
+                                    </button>
+
+                                    {% endfor %}
+
+                                </div>
+                            </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                            <div class="date-picker__nav-slot date-picker__nav-slot--next">
+                                <button type="button" class="calendar-nav__btn js-cal-next" aria-label="Mes siguiente">›</button>
+                            </div>
+                        </div>
+
+                        <div class="date-picker__footer">
+                            <button type="button" class="btn-date-text js-date-cancel">Cancelar</button>
+                            <button type="button" class="btn btn-primary js-date-confirm" disabled>Seleccionar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fecha-resumen js-fecha-resumen" aria-live="polite">
+                    <span class="js-range-text">Selecciona una fecha de salida para ver tu rango.</span>
+                    <span class="fecha-resumen__acciones">
+                        <button type="button" class="btn btn-ghost btn-sm js-editar-fechas" hidden>Editar</button>
+                        <button type="button" class="btn btn-ghost btn-sm js-limpiar-rango" hidden>Limpiar</button>
+                    </span>
+                </div>
+            </div>
+
+            {% endif %}
+
+
+            <!-- =====================================================
+                 ALOJAMIENTO
+            ====================================================== -->
+
+            {% if paquete.alojamientos %}
+
+            <div class="detail-panel detail-panel--wide">
+
+                <span class="eyebrow">🏨 ALOJAMIENTO</span>
+                <h2>Elige dónde te hospedarás</h2>
+
+                <div class="package-service-grid">
+
+                    {% for hotel in paquete.alojamientos %}
+
+                    <label class="package-service-card pick-card">
+                        <input
+                            type="radio"
+                            name="alojamiento"
+                            value="{{ hotel.id_alojamiento }}"
+                            required
+                            data-price="{{ hotel.precio|default(0)|float }}"
+                        >
+
+                        <span class="package-service-card__icon">🏨</span>
+
+                        <div>
+
+                            <h3>{{ hotel.nombre }}</h3>
+
+                            {% if hotel.tipo_alojamiento %}
+                            <p><strong>{{ hotel.tipo_alojamiento }}</strong></p>
+                            {% endif %}
+
+                            {% if hotel.ciudad %}
+                            <p>📍 {{ hotel.ciudad }}</p>
+                            {% endif %}
+
+                            {% if hotel.servicios %}
+                            <p>{{ hotel.servicios }}</p>
+                            {% endif %}
+
+                            {% if hotel.proveedor %}
+                            <small>Proveedor: {{ hotel.proveedor }}</small>
+                            {% endif %}
+
+                        </div>
+
+                        <b class="pick-check">✓</b>
+                    </label>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- =====================================================
+                 ALIMENTACIÓN | TRANSPORTE
+            ====================================================== -->
+
+            {% if paquete.alimentacion or paquete.transportes %}
+
+            <div class="detail-section-row">
+
+            {% if paquete.alimentacion %}
+
+            <div class="detail-panel detail-section-row__panel">
+
+                <span class="eyebrow">🍽️ ALIMENTACIÓN</span>
+                <h2>Selecciona tus comidas</h2>
+
+                <div class="package-service-grid">
+
+                    {% for comida in paquete.alimentacion %}
+
+                    <label class="package-service-card pick-card">
+                        <input
+                            type="checkbox"
+                            name="alimentacion"
+                            value="{{ comida.id_alimentacion }}"
+                            data-price="{{ comida.precio|default(0)|float }}"
+                        >
+
+                        <span class="package-service-card__icon">🍽️</span>
+
+                        <div>
+
+                            <h3>{{ comida.restaurante|default('Restaurante incluido') }}</h3>
+
+                            {% if comida.tipo_comida %}
+                            <p><strong>{{ comida.tipo_comida }}</strong></p>
+                            {% endif %}
+
+                            {% if comida.tipo_servicio %}
+                            <p>Servicio: {{ comida.tipo_servicio }}</p>
+                            {% endif %}
+
+                            {% if comida.incluye_bebidas %}
+                            <span class="status-positive">✓ Bebidas incluidas</span>
+                            {% else %}
+                            <span class="status-neutral">Bebidas no incluidas</span>
+                            {% endif %}
+
+                            {% if comida.precio and comida.precio > 0 %}
+                            <p class="pick-price">+${{ "{:,.0f}".format(comida.precio|float) }}</p>
+                            {% endif %}
+
+                        </div>
+
+                        <b class="pick-check">✓</b>
+                    </label>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- =====================================================
+                 TRANSPORTE
+            ====================================================== -->
+
+            {% if paquete.transportes %}
+
+            <div class="detail-panel detail-section-row__panel">
+
+                <span class="eyebrow">🚌 TRANSPORTE</span>
+                <h2>Cómo te desplazarás</h2>
+
+                <div class="package-service-grid">
+
+                    {% for transporte in paquete.transportes %}
+
+                    <label class="package-service-card pick-card">
+                        <input
+                            type="checkbox"
+                            name="transporte"
+                            value="{{ transporte.id_transporte }}"
+                            data-price="{{ transporte.precio|default(0)|float }}"
+                        >
+
+                        <span class="package-service-card__icon">
+                            {% if transporte.tipo == 'Aéreo' %}✈️{% else %}🚌{% endif %}
+                        </span>
+
+                        <div>
+
+                            <h3>{{ transporte.empresa }}</h3>
+
+                            {% if transporte.tipo %}
+                            <p><strong>{{ transporte.tipo }}</strong></p>
+                            {% endif %}
+
+                            {% if transporte.ruta %}
+                            <p>📍 {{ transporte.ruta }}</p>
+                            {% endif %}
+
+                            <div class="service-times">
+
+                                {% if transporte.hora_salida %}
+                                <span>🕐 Salida: <strong>{{ transporte.hora_salida }}</strong></span>
+                                {% endif %}
+
+                                {% if transporte.hora_regreso %}
+                                <span>🕐 Regreso: <strong>{{ transporte.hora_regreso }}</strong></span>
+                                {% endif %}
+
+                            </div>
+
+                            {% if transporte.proveedor %}
+                            <small>Proveedor: {{ transporte.proveedor }}</small>
+                            {% endif %}
+
+                        </div>
+
+                        <b class="pick-check">✓</b>
+                    </label>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- =====================================================
+                 ACTIVIDADES | SEGURO
+            ====================================================== -->
+
+            {% if paquete.actividades or paquete.seguros %}
+
+            <div class="detail-section-row">
+
+            {% if paquete.actividades %}
+
+            <div class="detail-panel detail-section-row__panel">
+
+                <span class="eyebrow">🎟️ ACTIVIDADES</span>
+                <h2>Selecciona tus experiencias</h2>
+
+                <div class="package-service-grid">
+
+                    {% for actividad in paquete.actividades %}
+
+                    <label class="package-service-card pick-card">
+                        <input
+                            type="checkbox"
+                            name="actividades"
+                            value="{{ actividad.id_actividad }}"
+                            data-price="{{ actividad.costo|default(0)|float }}"
+                        >
+
+                        <span class="package-service-card__icon">🎟️</span>
+
+                        <div>
+
+                            <h3>{{ actividad.nombre }}</h3>
+
+                            {% if actividad.tipo %}
+                            <p><strong>{{ actividad.tipo }}</strong></p>
+                            {% endif %}
+
+                            {% if actividad.destino %}
+                            <p>📍 {{ actividad.destino }}</p>
+                            {% endif %}
+
+                            {% if actividad.duracion_horas %}
+                            <p>⏱️ {{ actividad.duracion_horas }} horas</p>
+                            {% endif %}
+
+                            {% if actividad.costo and actividad.costo > 0 %}
+                            <p class="pick-price">+${{ "{:,.0f}".format(actividad.costo|float) }}</p>
+                            {% endif %}
+
+                            {% if actividad.guia %}
+                            <p>🧭 Guía: {{ actividad.guia }}</p>
+                            {% endif %}
+
+                        </div>
+
+                        <b class="pick-check">✓</b>
+                    </label>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- =====================================================
+                 SEGURO
+            ====================================================== -->
+
+            {% if paquete.seguros %}
+
+            <div class="detail-panel detail-section-row__panel">
+
+                <span class="eyebrow">🛡️ SEGURO</span>
+                <h2>Protege tu viaje</h2>
+
+                <div class="package-service-grid">
+
+                    {% for seguro in paquete.seguros %}
+
+                    <label class="package-service-card pick-card">
+                        <input
+                            type="checkbox"
+                            name="seguros"
+                            value="{{ seguro.id_seguro }}"
+                            {% if seguro.es_obligatorio %}checked disabled{% endif %}
+                            data-price="{{ seguro.precio|default(0)|float }}"
+                        >
+
+                        <span class="package-service-card__icon">🛡️</span>
+
+                        <div>
+
+                            <h3>{{ seguro.nombre }}</h3>
+
+                            {% if seguro.tipo_seguro %}
+                            <p>{{ seguro.tipo_seguro }}</p>
+                            {% endif %}
+
+                            <p>{{ seguro.cobertura }}</p>
+
+                            {% if seguro.descripcion %}
+                            <small>{{ seguro.descripcion }}</small>
+                            {% endif %}
+
+                            {% if seguro.es_obligatorio %}
+                            <span class="status-positive">✓ Incluido obligatoriamente</span>
+                            {% endif %}
+
+                            {% if seguro.precio and seguro.precio > 0 %}
+                            <p class="pick-price">+${{ "{:,.0f}".format(seguro.precio|float) }}</p>
+                            {% endif %}
+
+                        </div>
+
+                        <b class="pick-check">✓</b>
+                    </label>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- =====================================================
+                 EXTRAS | GUÍA
+            ====================================================== -->
+
+            {% if paquete.servicios_extra or paquete.guia %}
+
+            <div class="detail-section-row">
+
+            {% if paquete.servicios_extra %}
+
+            <div class="detail-panel detail-section-row__panel">
+
+                <span class="eyebrow">✨ SERVICIOS ADICIONALES</span>
+                <h2>Agrega algo especial</h2>
+
+                <div class="package-service-grid">
+
+                    {% for extra in paquete.servicios_extra %}
+
+                    <label class="package-service-card pick-card">
+                        <input
+                            type="checkbox"
+                            name="extras"
+                            value="{{ extra.id }}"
+                            data-price="{{ extra.precio|default(0)|float }}"
+                        >
+
+                        <span class="package-service-card__icon">✨</span>
+
+                        <div>
+
+                            <h3>{{ extra.nombre }}</h3>
+
+                            {% if extra.descripcion %}
+                            <p>{{ extra.descripcion }}</p>
+                            {% endif %}
+
+                            <p class="pick-price">+${{ "{:,.0f}".format(extra.precio|float) }}</p>
+
+                        </div>
+
+                        <b class="pick-check">✓</b>
+                    </label>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- =====================================================
+                 GUÍA
+            ====================================================== -->
+
+            {% if paquete.guia %}
+
+            <div class="detail-panel detail-section-row__panel">
+
+                <span class="eyebrow">🧭 GUÍA TURÍSTICO</span>
+                <h2>Tu acompañamiento</h2>
+
+                <div class="guide-detail-card">
+
+                    <div class="package-service-card__icon">🧭</div>
+
+                    <div>
+
+                        <h3>{{ paquete.guia.nombre_completo }}</h3>
+
+                        {% if paquete.guia.especialidad %}
+                        <p><strong>Especialidad:</strong> {{ paquete.guia.especialidad }}</p>
+                        {% endif %}
+
+                        {% if paquete.guia.idiomas %}
+                        <p>🌎 <strong>Idiomas:</strong> {{ paquete.guia.idiomas }}</p>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- =====================================================
+                 VIAJEROS
+            ====================================================== -->
+
+            <div class="detail-panel detail-panel--wide js-travelers-panel">
+
+                <span class="eyebrow">👥 VIAJEROS</span>
+                <h2>¿Quiénes viajan?</h2>
+                <p class="detail-panel__intro">Indica la cantidad y los datos de cada viajero.</p>
+
+                <div class="counter-grid">
+
+                    <div class="counter-card">
+                        <span class="field__label" id="lblAdultos">Adultos</span>
+                        <div class="stepper" data-stepper="adultos">
+                            <button type="button" class="stepper__btn js-step-down"
+                                    data-campo="adultos" aria-label="Quitar un adulto">−</button>
+                            <input type="number" id="inputAdultos" name="adultos"
+                                   class="stepper__value" value="1" min="1" max="20"
+                                   inputmode="numeric" aria-labelledby="lblAdultos">
+                            <button type="button" class="stepper__btn js-step-up"
+                                    data-campo="adultos" aria-label="Agregar un adulto">+</button>
+                        </div>
+                    </div>
+
+                    <div class="counter-card">
+                        <span class="field__label" id="lblMenores">Niños (2–17 años)</span>
+                        <div class="stepper" data-stepper="menores">
+                            <button type="button" class="stepper__btn js-step-down"
+                                    data-campo="menores" aria-label="Quitar un menor">−</button>
+                            <input type="number" id="inputMenores" name="menores"
+                                   class="stepper__value" value="0" min="0" max="20"
+                                   inputmode="numeric" aria-labelledby="lblMenores">
+                            <button type="button" class="stepper__btn js-step-up"
+                                    data-campo="menores" aria-label="Agregar un menor">+</button>
+                        </div>
+                    </div>
+
+                    <div class="counter-card">
+                        <span class="field__label" id="lblBebes">Bebés (0–23 meses)</span>
+                        <div class="stepper" data-stepper="bebes">
+                            <button type="button" class="stepper__btn js-step-down"
+                                    data-campo="bebes" aria-label="Quitar un bebé">−</button>
+                            <input type="number" id="inputBebes" name="bebes"
+                                   class="stepper__value" value="0" min="0" max="10"
+                                   inputmode="numeric" aria-labelledby="lblBebes">
+                            <button type="button" class="stepper__btn js-step-up"
+                                    data-campo="bebes" aria-label="Agregar un bebé">+</button>
+                        </div>
+                    </div>
+
+                    <div class="counter-card">
+                        <label class="field__label" for="inputMascotas">Mascotas</label>
+                        <select id="inputMascotas" name="mascotas" class="form-select">
+                            <option value="no">No</option>
+                            <option value="si">Sí</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div id="alertaBebesAmazonas" class="booking-alert" hidden>
+                    En Amazonas no se permite el ingreso de bebés. Retira los bebés para continuar.
+                </div>
+
+                <div id="mascotasDetalle" class="pet-detail" hidden>
+                    <div class="counter-grid">
+                        <div class="counter-card">
+                            <label class="field__label" for="inputMascotasCantidad">Cantidad</label>
+                            <input type="number" id="inputMascotasCantidad" name="mascotas_cantidad"
+                                   class="form-input" value="1" min="1" max="10" inputmode="numeric">
+                        </div>
+                        <div class="counter-card">
+                            <label class="field__label" for="inputMascotasTipo">Tipo / tamaño</label>
+                            <select id="inputMascotasTipo" name="mascotas_tipo" class="form-select">
+                                <option value="">Selecciona</option>
+                                <option value="Pequeño">Pequeño (hasta 10 kg)</option>
+                                <option value="Mediano">Mediano (10–25 kg)</option>
+                                <option value="Grande">Grande (más de 25 kg)</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="pet-note">
+                        ℹ️ La admisión de mascotas depende de la política de cada
+                        alojamiento. El proveedor confirmará este servicio.
+                    </p>
+                </div>
+
+                <div id="viajerosContainer" class="traveler-cards"></div>
+
+                <div id="alertaEdadViajeros" class="booking-alert" hidden></div>
+
+                <div class="form-group js-needs-block">
+                    <label class="field__label" for="inputAlergias">
+                        Alergias, movilidad o necesidades especiales
+                    </label>
+                    <input type="text" id="inputAlergias" name="alergias"
+                           class="form-input"
+                           placeholder="Ej. alergia al maní, movilidad reducida, ninguna...">
+                    <label class="check-line" for="aplicarTodos">
+                        <input type="checkbox" id="aplicarTodos" checked>
+                        Aplicar a todos los viajeros
+                    </label>
+                </div>
+
+                {% if error %}
+                <div class="booking-alert js-booking-alert" role="alert">⚠️ {{ error }}</div>
+                {% else %}
+                <div class="booking-alert js-booking-alert" role="alert" hidden></div>
+                {% endif %}
+
+            </div>
+
+            <!-- =====================================================
+                 INDICACIONES
+            ====================================================== -->
+
+            <div class="detail-panel detail-panel--wide js-notes-panel">
+
+                <span class="eyebrow">📝 INDICACIONES</span>
+                <h2>Notas o solicitudes especiales</h2>
+
+                <div class="form-group">
+                    <label class="field__label" for="inputObservaciones">Tus notas</label>
+                    <textarea id="inputObservaciones" name="observaciones"
+                              class="form-textarea js-notes" rows="4" maxlength="500"
+                              placeholder="Celebraciones, preferencias, horarios, necesidades..."></textarea>
+                    <small class="textarea-counter">
+                        <span class="js-notes-count">0</span>/500 caracteres
+                    </small>
+                </div>
+
+                <label class="check-line js-terms-line" for="inputTerminos">
+                    <input type="checkbox" id="inputTerminos" class="js-terms">
+                    <span>Acepto los términos y la política de privacidad
+                    <span class="form-required">*</span></span>
+                    <small class="field__error" id="inputTerminos_error"></small>
+                </label>
+
+                <input type="hidden" name="acepta_no_reembolso"
+                       id="inputAcepta" value="0">
+
+                <p class="payment-note">
+                    MAREVA no procesa el pago. El proveedor te indicará el medio de pago.
+                </p>
+
+                <button type="button" class="btn-link js-revisar" hidden>
+                    Revisar campos pendientes
+                </button>
+
+            </div>
+
+        </main>
+
+
+        <!-- =========================================================
+             LATERAL
+        ========================================================== -->
+
+        <aside>
+            <div class="detail-panel detail-side-card js-selection-summary">
+                <span class="eyebrow">TU SELECCIÓN</span>
+                <h3>{{ paquete.nombre }}</h3>
+                <p>📍 {{ paquete.nombre_destino }}</p>
+                <hr>
+                <div class="summary-line"><span>Salida</span><strong class="js-summary-fecha">Por elegir</strong></div>
+                <div class="summary-line"><span>Regreso</span><strong class="js-summary-regreso">Por elegir</strong></div>
+                <div class="summary-line"><span>Duración</span><strong class="js-summary-noches">—</strong></div>
+                <div class="summary-line"><span>Alojamiento</span><strong class="js-summary-alojamiento">0</strong></div>
+                <div class="summary-line"><span>Alimentación</span><strong class="js-summary-alimentacion">0</strong></div>
+                <div class="summary-line"><span>Transporte</span><strong class="js-summary-transporte">0</strong></div>
+                <div class="summary-line"><span>Actividades</span><strong class="js-summary-actividades">0</strong></div>
+                <div class="summary-line"><span>Seguro</span><strong class="js-summary-seguros">0</strong></div>
+                <div class="summary-line"><span>Servicios extra</span><strong class="js-summary-extras">0</strong></div>
+                <div class="summary-line"><span>Viajeros</span><strong class="js-summary-viajeros">1</strong></div>
+                <div class="summary-line"><span>Mascotas</span><strong class="js-summary-mascotas">No</strong></div>
+                <div class="detail-side-card__mobile-range js-mobile-range">Selecciona tus fechas</div>
+                <hr>
+                <div class="price-breakdown" id="priceBreakdown">
+                    <div class="price-breakdown__line"><span>Base por persona</span><strong id="priceBase">${{ "{:,.0f}".format(paquete.precio|float) }}</strong></div>
+                    <div class="price-breakdown__line" id="priceIncluidosLine" style="display:none;">
+                        <span>Incluido en el paquete</span><strong id="priceIncluidos"></strong>
+                    </div>
+                    <div id="priceItems"></div>
+                    <div class="price-breakdown__line"><span>Servicios seleccionados</span><strong id="priceServices">$0</strong></div>
+                    <hr>
+                    <div class="price-breakdown__total"><span>Total por persona</span><h2 id="priceTotal">${{ "{:,.0f}".format(paquete.precio|float) }}</h2></div>
+                    <div class="price-breakdown__line" id="travelersLine" style="display:none;">
+                        <span>Total <span id="travelerCount">1</span> viajero(s)</span>
+                        <strong id="priceGrandTotal" style="color:var(--mareva-coral, #e74c3c);font-size:1.1rem;"></strong>
+                    </div>
+                </div>
+                <div class="booking-pending js-pending" role="status" aria-live="polite"></div>
+                <button type="submit" id="btnReserva"
+                        class="btn btn-primary btn-lg btn-block js-submit">
+                    <span class="js-submit-label">Hacer reserva →</span>
+                </button>
+                <hr>
+                <h3>Pago directo al proveedor</h3>
+                <p>MAREVA no procesa el pago. El proveedor te indicará el medio de pago.</p>
+            </div>
+        </aside>
+
+        </form>
+
+    </div>
+
+</section>
+
+
+<section class="section reviews-section" id="opiniones">
+    <div class="container">
+
+        <div class="section-heading-row">
+            <div>
+                <span class="eyebrow">OPINIONES REALES</span>
+                <h2>Lo que dicen los viajeros</h2>
+                <p class="muted">Experiencias compartidas por clientes que ya viajaron con MAREVA.</p>
+            </div>
+        </div>
+
+        <div class="reviews-layout">
+
+            <div>
+                <div class="review-summary">
+                    <div class="review-summary__score">{{ '%.1f'|format(promedio_hero) }}</div>
+                    <div class="review-summary__stars">
+                        {% for i in range(1, 6) %}{{ '★' if i <= llenas_hero else '☆' }}{% endfor %}
+                    </div>
+                    <p>{{ paquete.total_resenas|default(0) }} opiniones publicadas</p>
+                </div>
+
+                <div class="review-list">
+                    {% for r in resenas %}
+                        <article class="review-card">
+                            <div class="review-card__top">
+                                <div>
+                                    <h3>{{ r.nombre }} {{ r.apellido|first }}.</h3>
+                                    <small>{{ r.fecha.strftime('%d/%m/%Y') if r.fecha else '' }}</small>
+                                </div>
+                                <span class="review-card__stars">
+                                    {% for i in range(1, 6) %}{{ '★' if r.calificacion and i <= r.calificacion else '☆' }}{% endfor %}
+                                </span>
+                            </div>
+                            {% if r.titulo %}<h4>{{ r.titulo }}</h4>{% endif %}
+                            {% if r.comentario %}<p>{{ r.comentario }}</p>{% endif %}
+                            {% if r.calificacion_servicio %}
+                                <div class="review-card__service">Atención del servicio: {{ r.calificacion_servicio }}/5</div>
+                            {% endif %}
+                        </article>
+                    {% else %}
+                        <div class="empty-state">
+                            <span>⭐</span>
+                            <p>Aún no hay opiniones. ¡Sé la primera persona en compartir tu experiencia!</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if id_cliente %}
+                <div class="review-form-card">
+                    {% if ya_reseno %}
+                        <h3>¡Gracias por tu opinión!</h3>
+                        <p>Ya publicaste una reseña sobre este paquete. Puedes verla arriba.</p>
+                    {% else %}
+                        <h3>Comparte tu experiencia</h3>
+                        <p>Tu opinión ayuda a otros viajeros a elegir con confianza.</p>
+
+                        <form method="post" action="{{ url_for('paquetes.crear_resena', slug=paquete.slug) }}">
+                            <label class="field-label">Valoración general *</label>
+                            <div class="review-stars" data-star-picker data-name="calificacion" data-value="0">
+                                {% for i in range(1, 6) %}
+                                    <button type="button" data-star="{{ i }}" aria-label="{{ i }} estrellas">★</button>
+                                {% endfor %}
+                                <input type="hidden" name="calificacion" value="0">
+                                <span class="review-stars__label">Elige tu nota</span>
+                            </div>
+
+                            <label class="field-label">Atención del servicio (opcional)</label>
+                            <div class="review-stars" data-star-picker data-name="calificacion_servicio" data-value="0">
+                                {% for i in range(1, 6) %}
+                                    <button type="button" data-star="{{ i }}" aria-label="{{ i }} estrellas">★</button>
+                                {% endfor %}
+                                <input type="hidden" name="calificacion_servicio" value="">
+                                <span class="review-stars__label">Elige tu nota</span>
+                            </div>
+
+                            <label class="field-label" for="tituloResena">Título (opcional)</label>
+                            <input id="tituloResena" type="text" name="titulo" maxlength="120" placeholder="Resume tu experiencia">
+
+                            <label class="field-label" for="comentarioResena">Tu comentario (opcional)</label>
+                            <textarea id="comentarioResena" name="comentario" maxlength="1200" placeholder="¿Qué te gustó? ¿Qué mejorarías?"></textarea>
+
+                            <button type="submit" class="btn btn-primary">Publicar opinión</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="review-form-card">
+                    <h3>¿Ya viajaste con nosotros?</h3>
+                    <p>Inicia sesión como cliente para publicar tu opinión sobre este paquete.</p>
+                    <a class="btn btn-outline" href="{{ url_for('auth.mostrar_login', next=request.path) }}">Iniciar sesión</a>
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+</section>
+
+{% set texto_destino = (
+    (paquete.nombre or "") ~ " " ~
+    (paquete.slug or "")
+)|lower %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("formDetalleReserva");
+    if (!form) return;
+
+    const BASE_PRICE = {{ paquete.precio|float }};
+    const PrecioServicios = document.getElementById("priceServices");
+    const PrecioTotal = document.getElementById("priceTotal");
+    const PrecioGrandTotal = document.getElementById("priceGrandTotal");
+    const TravelersLine = document.getElementById("travelersLine");
+    const TravelerCount = document.getElementById("travelerCount");
+
+    const resumen = {
+        fecha: form.querySelector(".js-summary-fecha"),
+        regreso: form.querySelector(".js-summary-regreso"),
+        noches: form.querySelector(".js-summary-noches"),
+        alojamiento: form.querySelector(".js-summary-alojamiento"),
+        alimentacion: form.querySelector(".js-summary-alimentacion"),
+        transporte: form.querySelector(".js-summary-transporte"),
+        actividades: form.querySelector(".js-summary-actividades"),
+        seguros: form.querySelector(".js-summary-seguros"),
+        extras: form.querySelector(".js-summary-extras"),
+        viajeros: form.querySelector(".js-summary-viajeros"),
+        mascotas: form.querySelector(".js-summary-mascotas"),
+    };
+
+    const campoSalida = form.querySelector(".js-campo-salida");
+    const campoRegreso = form.querySelector(".js-campo-regreso");
+    const valorSalida = form.querySelector(".js-valor-salida");
+    const valorRegreso = form.querySelector(".js-valor-regreso");
+    const picker = form.querySelector(".js-date-picker");
+    const hint = form.querySelector(".js-date-hint");
+    const errorEl = form.querySelector(".js-date-error");
+    const btnCancel = form.querySelector(".js-date-cancel");
+    const btnConfirm = form.querySelector(".js-date-confirm");
+    const btnEditar = form.querySelector(".js-editar-fechas");
+    const btnLimpiar = form.querySelector(".js-limpiar-rango");
+    const btnPrev = form.querySelector(".js-cal-prev");
+    const btnNext = form.querySelector(".js-cal-next");
+    const textoRango = form.querySelector(".js-range-text");
+    const inputSalida = document.getElementById("fechaSalidaInput");
+    const inputRegreso = document.getElementById("fechaRegresoInput");
+    const mobileRange = form.querySelector(".js-mobile-range");
+    const calendario = form.querySelector(".js-calendario-meses");
+    const meses = [...form.querySelectorAll(".js-mes")];
+    const celdas = [...form.querySelectorAll(".calendar-day[data-fecha]")];
+
+    const DIAS_ES = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+    const MESES_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+    const UN_DIA = 24 * 60 * 60 * 1000;
+    const NOCHES_PAQUETE = {{ paquete.duracion_noches or (paquete.duracion_dias - 1) or 1 }};
+    const DESTINO_AMAZONAS = {{ ('amazonas' in texto_destino or 'leticia' in texto_destino)|tojson }};
+    const celdasDeshabilitadas = new WeakSet();
+
+    celdas.forEach(celda => {
+        if (celda.disabled) {
+            celdasDeshabilitadas.add(celda);
+        }
+    });
+
+    let confirmado = null;
+    let borrador = null;
+    let paso = "salida";
+    let indiceMes = 0;
+
+    function aFecha(iso) {
+        const [anio, mes, dia] = iso.split("-").map(Number);
+        return new Date(Date.UTC(anio, mes - 1, dia));
+    }
+
+    function fmtCorto(iso) {
+        if (!iso) return "DD-MM-YYYY";
+        const f = aFecha(iso);
+        return String(f.getUTCDate()).padStart(2, "0") + "-" +
+               String(f.getUTCMonth() + 1).padStart(2, "0") + "-" +
+               f.getUTCFullYear();
+    }
+
+    function fmtLargo(iso) {
+        const f = aFecha(iso);
+        return DIAS_ES[f.getUTCDay()] + " " + f.getUTCDate() + " " +
+               MESES_ES[f.getUTCMonth()] + " " + f.getUTCFullYear();
+    }
+
+    function diasEntre(inicio, fin) {
+        return Math.round((aFecha(fin) - aFecha(inicio)) / UN_DIA);
+    }
+
+    function textoNoches(rango) {
+        const n = diasEntre(rango.salida, rango.regreso);
+        return n + (n === 1 ? " noche" : " noches");
+    }
+
+    function celdaDe(iso) {
+        return celdas.find(celda => celda.dataset.fecha === iso);
+    }
+
+    function esMovil() {
+        return window.matchMedia("(max-width: 767px)").matches;
+    }
+
+    function porPagina() {
+        return esMovil() ? 1 : 2;
+    }
+
+    function limiteMes() {
+        return Math.max(0, meses.length - porPagina());
+    }
+
+    function actualizarMeses() {
+        indiceMes = Math.min(Math.max(0, indiceMes), limiteMes());
+        meses.forEach((mes, i) => {
+            mes.classList.toggle(
+                "is-visible",
+                i >= indiceMes && i < indiceMes + porPagina()
+            );
+        });
+        if (btnPrev) btnPrev.disabled = indiceMes <= 0;
+        if (btnNext) btnNext.disabled = indiceMes >= limiteMes();
+    }
+
+    function limpiarMarcas() {
+        celdas.forEach(celda => {
+            celda.classList.remove("is-start", "is-end", "is-in-range");
+            celda.setAttribute("aria-pressed", "false");
+        });
+    }
+
+    function mostrarError(texto) {
+        if (!errorEl) return;
+        errorEl.textContent = texto || "";
+        errorEl.hidden = !texto;
+    }
+
+    function aplicarRestriccionNoches() {
+        const restringir = paso === "regreso" && borrador?.salida && !borrador.regreso;
+
+        celdas.forEach(celda => {
+            if (celdasDeshabilitadas.has(celda)) {
+                return;
+            }
+
+            if (!restringir) {
+                celda.disabled = false;
+                return;
+            }
+
+            celda.disabled = diasEntre(borrador.salida, celda.dataset.fecha) !== NOCHES_PAQUETE;
+        });
+    }
+
+    function pintarBorrador() {
+        limpiarMarcas();
+        mostrarError("");
+        aplicarRestriccionNoches();
+
+        if (valorSalida) valorSalida.textContent = borrador?.salida ? fmtCorto(borrador.salida) : "DD-MM-YYYY";
+        if (valorRegreso) valorRegreso.textContent = borrador?.regreso ? fmtCorto(borrador.regreso) : "DD-MM-YYYY";
+
+        campoSalida?.classList.toggle("is-active", paso === "salida");
+        campoRegreso?.classList.toggle("is-active", paso !== "salida");
+
+        if (hint) {
+            hint.textContent = paso === "salida"
+                ? "Elige la fecha de salida."
+                : paso === "regreso"
+                    ? "Elige la fecha de regreso exactamente " +
+                      NOCHES_PAQUETE +
+                      (NOCHES_PAQUETE === 1 ? " noche después." : " noches después.")
+                    : "Revisa tu rango y confirma.";
+        }
+
+        if (btnConfirm) {
+            btnConfirm.disabled = !(
+                borrador &&
+                borrador.salida &&
+                borrador.regreso &&
+                diasEntre(borrador.salida, borrador.regreso) === NOCHES_PAQUETE
+            );
+        }
+        if (btnLimpiar) btnLimpiar.hidden = !(borrador?.salida || confirmado);
+
+        if (textoRango) {
+            if (borrador?.salida && borrador?.regreso) {
+                textoRango.textContent = "Salida: " + fmtCorto(borrador.salida) +
+                    " → Regreso: " + fmtCorto(borrador.regreso) +
+                    " · " + textoNoches(borrador);
+            } else if (!confirmado) {
+                textoRango.textContent = "Selecciona una fecha de salida para ver tu rango.";
+            }
+        }
+
+        if (!borrador) return;
+
+        const inicio = celdaDe(borrador.salida);
+        const fin = borrador.regreso ? celdaDe(borrador.regreso) : null;
+
+        if (inicio) {
+            inicio.classList.add("is-start");
+            inicio.setAttribute("aria-pressed", "true");
+        }
+        if (fin) fin.classList.add("is-end");
+
+        if (inicio && fin) {
+            const desde = aFecha(borrador.salida).getTime();
+            const hasta = aFecha(borrador.regreso).getTime();
+            celdas.forEach(celda => {
+                const valor = aFecha(celda.dataset.fecha).getTime();
+                if (valor >= desde && valor <= hasta) celda.classList.add("is-in-range");
+            });
+        }
+    }
+
+    function pintarConfirmado() {
+        if (valorSalida) valorSalida.textContent = confirmado ? fmtCorto(confirmado.salida) : "DD-MM-YYYY";
+        if (valorRegreso) valorRegreso.textContent = confirmado ? fmtCorto(confirmado.regreso) : "DD-MM-YYYY";
+
+        if (textoRango) {
+            textoRango.textContent = confirmado
+                ? "Salida: " + fmtCorto(confirmado.salida) +
+                  " → Regreso: " + fmtCorto(confirmado.regreso) +
+                  " · " + textoNoches(confirmado)
+                : "Selecciona una fecha de salida para ver tu rango.";
+        }
+
+        if (btnEditar) btnEditar.hidden = !confirmado;
+        if (btnLimpiar) btnLimpiar.hidden = !confirmado;
+
+        if (resumen.fecha) resumen.fecha.textContent = confirmado ? fmtLargo(confirmado.salida) : "Por elegir";
+        if (resumen.regreso) resumen.regreso.textContent = confirmado ? fmtLargo(confirmado.regreso) : "Por elegir";
+        if (resumen.noches) resumen.noches.textContent = confirmado ? textoNoches(confirmado) : "—";
+        if (mobileRange) {
+            mobileRange.textContent = confirmado
+                ? "Salida: " + fmtCorto(confirmado.salida) +
+                  " → Regreso: " + fmtCorto(confirmado.regreso) +
+                  " · " + textoNoches(confirmado)
+                : "Selecciona tus fechas";
+        }
+
+        if (inputSalida) inputSalida.value = confirmado ? confirmado.salida : "";
+        if (inputRegreso) inputRegreso.value = confirmado ? confirmado.regreso : "";
+        let haySalida = false;
+        form.querySelectorAll('input[name="id_salida"]').forEach(radio => {
+            radio.checked = !!(confirmado && radio.value === confirmado.id);
+            if (radio.checked) haySalida = true;
+        });
+
+        // Las fechas libres pueden no coincidir con una salida cargada. El
+        // backend sigue exigiendo id_salida para validar el paquete: se usa
+        // la primera salida disponible como soporte técnico, mientras que
+        // las fechas reales viajan en los campos ocultos.
+        if (confirmado && !haySalida) {
+            const primera = form.querySelector('input[name="id_salida"]');
+            if (primera) primera.checked = true;
+        }
+    }
+
+    function abrirPicker(modo, enfocar = true) {
+        if (!borrador) borrador = confirmado ? { ...confirmado } : null;
+        paso = confirmado
+            ? (modo === "regreso" ? "regreso" : "listo")
+            : (borrador?.salida && !borrador.regreso ? "regreso" : "salida");
+
+        const mesInicial = borrador
+            ? meses.findIndex(mes => mes.dataset.mes === borrador.salida.slice(0, 7))
+            : 0;
+        indiceMes = mesInicial >= 0 ? mesInicial : 0;
+
+        if (picker) picker.hidden = false;
+        campoSalida?.setAttribute("aria-expanded", "true");
+        campoRegreso?.setAttribute("aria-expanded", "true");
+
+        actualizarMeses();
+        pintarBorrador();
+
+        const inicial = celdas.find(celda =>
+            !celda.disabled &&
+            celda.closest(".js-mes")?.classList.contains("is-visible") &&
+            (!borrador || celda.dataset.fecha >= borrador.salida)
+        ) || celdas.find(celda => !celda.disabled && celda.closest(".js-mes")?.classList.contains("is-visible"));
+        if (enfocar) inicial?.focus();
+    }
+
+    function cerrarPicker(aplicar) {
+        if (aplicar && borrador?.salida && borrador?.regreso) {
+            if (diasEntre(borrador.salida, borrador.regreso) !== NOCHES_PAQUETE) {
+                mostrarError(
+                    "Este paquete dura exactamente " +
+                    NOCHES_PAQUETE +
+                    (NOCHES_PAQUETE === 1 ? " noche." : " noches.")
+                );
+                return;
+            }
+            confirmado = { ...borrador };
+        }
+        borrador = null;
+
+        if (picker) picker.hidden = true;
+        campoSalida?.setAttribute("aria-expanded", "false");
+        campoRegreso?.setAttribute("aria-expanded", "false");
+
+        limpiarMarcas();
+        pintarConfirmado();
+        (confirmado && btnEditar && !btnEditar.hidden ? btnEditar : campoSalida)?.focus();
+    }
+
+    function elegirSalida(celda) {
+        borrador = {
+            salida: celda.dataset.fecha,
+            regreso: null,
+            id: celda.dataset.idSalida,
+            regresoAsociado: celda.dataset.regresoAsociado || "",
+        };
+        paso = "regreso";
+        pintarBorrador();
+
+        campoRegreso?.focus();
+    }
+
+    function alHacerClic(celda) {
+        if (!celda || celda.disabled) return;
+        const fecha = celda.dataset.fecha;
+
+        if (paso === "salida" || !borrador) {
+            elegirSalida(celda);
+            return;
+        }
+
+        if (paso === "regreso" || !borrador.regreso) {
+            if (fecha <= borrador.salida) {
+                elegirSalida(celda);
+                return;
+            }
+            if (diasEntre(borrador.salida, fecha) !== NOCHES_PAQUETE) {
+                mostrarError(
+                    "Este paquete dura exactamente " +
+                    NOCHES_PAQUETE +
+                    (NOCHES_PAQUETE === 1 ? " noche." : " noches.")
+                );
+                return;
+            }
+            borrador.regreso = fecha;
+            if (borrador.regresoAsociado && borrador.regresoAsociado !== fecha) {
+                borrador.id = "";
+            }
+            paso = "listo";
+            pintarBorrador();
+            btnConfirm?.focus();
+            return;
+        }
+
+        if (fecha <= borrador.salida) {
+            elegirSalida(celda);
+            return;
+        }
+        if (diasEntre(borrador.salida, fecha) !== NOCHES_PAQUETE) {
+            mostrarError(
+                "Este paquete dura exactamente " +
+                NOCHES_PAQUETE +
+                (NOCHES_PAQUETE === 1 ? " noche." : " noches.")
+            );
+            return;
+        }
+        borrador.regreso = fecha;
+        if (borrador.regresoAsociado && borrador.regresoAsociado !== fecha) {
+            borrador.id = "";
+        }
+        paso = "listo";
+        pintarBorrador();
+        btnConfirm?.focus();
+    }
+
+    celdas.forEach(celda => celda.addEventListener("click", () => alHacerClic(celda)));
+
+    campoSalida?.addEventListener("click", () => abrirPicker("salida"));
+    campoRegreso?.addEventListener("click", () => abrirPicker("regreso"));
+    btnEditar?.addEventListener("click", () => abrirPicker("listo"));
+    btnLimpiar?.addEventListener("click", () => {
+        confirmado = null;
+        borrador = null;
+        pintarConfirmado();
+    });
+    btnCancel?.addEventListener("click", () => cerrarPicker(false));
+    btnConfirm?.addEventListener("click", () => cerrarPicker(true));
+    btnPrev?.addEventListener("click", () => { indiceMes--; actualizarMeses(); });
+    btnNext?.addEventListener("click", () => { indiceMes++; actualizarMeses(); });
+
+    calendario?.addEventListener("keydown", event => {
+        const actual = document.activeElement;
+        if (!actual || !actual.classList.contains("calendar-day")) return;
+        const pasos = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 7, ArrowUp: -7 };
+        const paso = pasos[event.key];
+        if (!paso) return;
+        event.preventDefault();
+        const indice = celdas.indexOf(actual);
+        for (let i = indice + paso; i >= 0 && i < celdas.length; i += paso) {
+            if (!celdas[i].disabled) { celdas[i].focus(); break; }
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && picker && !picker.hidden) {
+            event.preventDefault();
+            cerrarPicker(false);
+        }
+    });
+
+    window.addEventListener("resize", actualizarMeses);
+
+    function contar(campo) {
+        let n = 0;
+        form.querySelectorAll('input[name="' + campo + '"]').forEach(i => { if (i.checked) n++; });
+        return n;
+    }
+
+    function seleccionadosPorGrupo(campo) {
+        const arr = [];
+        form.querySelectorAll('input[name="' + campo + '"]').forEach(i => {
+            if (i.checked) arr.push(parseFloat(i.dataset.price) || 0);
+        });
+        return arr;
+    }
+
+    function fmt(v) { return "$" + Math.round(v).toLocaleString("es-CO"); }
+
+    function actualizarResumen() {
+        resumen.alojamiento.textContent = contar("alojamiento");
+        resumen.alimentacion.textContent = contar("alimentacion");
+        resumen.transporte.textContent = contar("transporte");
+        resumen.actividades.textContent = contar("actividades");
+        resumen.seguros.textContent = contar("seguros");
+        resumen.extras.textContent = contar("extras");
+
+        const seleccionados = [];
+        ["alimentacion","transporte","actividades","seguros","extras"].forEach(c => {
+            form.querySelectorAll('input[name="' + c + '"]:checked').forEach(i => {
+                seleccionados.push({
+                    nombre: i.closest("label")?.querySelector("h3")?.textContent.trim() || c,
+                    precio: parseFloat(i.dataset.price) || 0,
+                });
+            });
+        });
+
+        const priceItems = document.getElementById("priceItems");
+        if (priceItems) {
+            priceItems.replaceChildren(...seleccionados.map(s => {
+                const fila = document.createElement("div");
+                fila.className = "price-breakdown__line";
+                const nombre = document.createElement("span");
+                nombre.textContent = s.nombre;
+                const valor = document.createElement("strong");
+                valor.textContent = "+" + fmt(s.precio);
+                fila.append(nombre, valor);
+                return fila;
+            }));
+        }
+
+        const incluidos = [];
+        ["alojamiento","transporte"].forEach(c => {
+            form.querySelectorAll('input[name="' + c + '"]:checked').forEach(i => {
+                incluidos.push(
+                    i.closest("label")?.querySelector("h3")?.textContent.trim() || c
+                );
+            });
+        });
+
+        const incluidosLine = document.getElementById("priceIncluidosLine");
+        if (incluidosLine) {
+            incluidosLine.style.display = incluidos.length ? "flex" : "none";
+            const incluidosEl = document.getElementById("priceIncluidos");
+            if (incluidosEl) incluidosEl.textContent = incluidos.join(", ");
+        }
+
+        let servicesTotal = seleccionados.reduce(
+            (suma, s) => suma + s.precio, 0
+        );
+
+        const perPerson = BASE_PRICE + servicesTotal;
+        PrecioServicios.textContent = fmt(servicesTotal);
+        PrecioTotal.textContent = fmt(perPerson);
+
+        const adultos = parseInt(form.elements.adultos?.value, 10) || 1;
+        const menores = parseInt(form.elements.menores?.value, 10) || 0;
+        const bebes = parseInt(form.elements.bebes?.value, 10) || 0;
+        const travelers = adultos + menores + bebes;
+        const pagantes = adultos + menores;
+
+        // No existe tarifa de menor en la base de datos: se cobra el mismo
+        // valor por persona. Si se agrega, solo cambiaría este multiplicador.
+        const tarifaMenor = 1;
+
+        if (resumen.viajeros) resumen.viajeros.textContent = travelers;
+        if (resumen.mascotas) {
+            resumen.mascotas.textContent =
+                form.elements.mascotas?.value === "si" ? "Sí" : "No";
+        }
+
+        TravelersLine.style.display = "flex";
+        TravelerCount.textContent = travelers;
+        PrecioGrandTotal.textContent = fmt(
+            perPerson * (pagantes * tarifaMenor)
+        );
+    }
+
+    /* ========================================================
+       VIAJEROS E INDICACIONES
+       ======================================================== */
+
+    const STORAGE_KEY = "mareva_reserva_detalle_{{ paquete.slug }}";
+    const btnReserva = document.getElementById("btnReserva");
+    const submitLabel = form.querySelector(".js-submit-label");
+    const pendingEl = form.querySelector(".js-pending");
+    const revisarBtn = form.querySelector(".js-revisar");
+    const alertaServidor = form.querySelector(".js-booking-alert");
+    const viajerosContainer = document.getElementById("viajerosContainer");
+    const inputAdultos = document.getElementById("inputAdultos");
+    const inputMenores = document.getElementById("inputMenores");
+    const inputBebes = document.getElementById("inputBebes");
+    const alertaBebesAmazonas = document.getElementById("alertaBebesAmazonas");
+    const alertaEdadViajeros = document.getElementById("alertaEdadViajeros");
+    const inputMascotas = document.getElementById("inputMascotas");
+    const mascotasDetalle = document.getElementById("mascotasDetalle");
+    const inputAlergias = document.getElementById("inputAlergias");
+    const aplicarTodos = document.getElementById("aplicarTodos");
+    const notas = form.querySelector(".js-notes");
+    const notesCount = form.querySelector(".js-notes-count");
+    const terms = form.querySelector(".js-terms");
+    const inputAcepta = document.getElementById("inputAcepta");
+
+    const TIPOS_DOC = {
+        adulto: [
+            ["CC", "Cédula de ciudadanía"],
+            ["CE", "Cédula de extranjería"],
+            ["Pasaporte", "Pasaporte"],
+        ],
+        menor: [
+            ["TI", "Tarjeta de identidad"],
+            ["RC", "Registro civil"],
+            ["Pasaporte", "Pasaporte"],
+        ],
+        bebe: [
+            ["RC", "Registro civil"],
+            ["Pasaporte", "Pasaporte"],
+        ],
+    };
+    const IDIOMAS = ["Español", "Inglés", "Portugués", "Francés"];
+
+    let viajeros = [];
+
+    function esc(texto) {
+        return String(texto ?? "").replace(/[&<>"']/g, caracter => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        })[caracter]);
+    }
+
+    function limitar(campo, valor) {
+        if (campo === "adultos") return Math.min(20, Math.max(1, valor || 1));
+        return Math.min(20, Math.max(0, valor || 0));
+    }
+
+    function cantidad(campo) {
+        const input = campo === "adultos"
+            ? inputAdultos
+            : campo === "bebes"
+                ? inputBebes
+                : inputMenores;
+        return limitar(campo, parseInt(input?.value, 10));
+    }
+
+    function categoriaViajero(indice) {
+        if (indice < cantidad("adultos")) return "adulto";
+        if (indice < cantidad("adultos") + cantidad("menores")) return "menor";
+        return "bebe";
+    }
+
+    function asegurarViajeros() {
+        const total = cantidad("adultos") + cantidad("menores") + cantidad("bebes");
+        while (viajeros.length < total) {
+            viajeros.push({
+                nombre: "", apellido: "", tipo: "", documento: "",
+                idioma: "Español", edad: "", meses: "", necesidades: "",
+            });
+        }
+        if (viajeros.length > total) viajeros.length = total;
+    }
+
+    function leerDOM() {
+        if (!viajerosContainer) return;
+        viajerosContainer.querySelectorAll(".traveler-card").forEach((card, i) => {
+            if (!viajeros[i]) return;
+            ["nombre", "apellido", "tipo", "documento", "idioma", "edad", "meses", "necesidades"]
+                .forEach(clave => {
+                    const nodo = card.querySelector('[data-campo="' + clave + '"]');
+                    if (nodo) viajeros[i][clave] = nodo.value;
+                });
+        });
+    }
+
+    function opcionesTipo(actual, categoria) {
+        return '<option value="">Selecciona</option>' +
+            TIPOS_DOC[categoria].map(([valor, texto]) =>
+                '<option value="' + valor + '"' + (actual === valor ? " selected" : "") + '>' +
+                texto + "</option>"
+            ).join("");
+    }
+
+    function opcionesIdioma(actual) {
+        return IDIOMAS.map(idioma =>
+            '<option value="' + idioma + '"' + (actual === idioma ? " selected" : "") + '>' +
+            idioma + "</option>"
+        ).join("");
+    }
+
+    function claveCampo(nombre) {
+        const limpio = nombre.replace(/^viajero_/, "").replace("[]", "");
+        return limpio === "tipo_documento" ? "tipo" : limpio;
+    }
+
+    function inputField(id, nombre, etiqueta, valor, extra) {
+        return '<div class="field">' +
+            '<label class="field__label" for="' + id + '">' + etiqueta + "</label>" +
+            '<input type="text" id="' + id + '" name="' + nombre + '" data-campo="' +
+            claveCampo(nombre) + '" class="form-input" value="' + esc(valor) + '" ' +
+            (extra || "") + ">" +
+            '<small class="field__error" id="' + id + '_error"></small>' +
+            "</div>";
+    }
+
+    function selectField(id, nombre, etiqueta, opciones, extra) {
+        return '<div class="field">' +
+            '<label class="field__label" for="' + id + '">' + etiqueta + "</label>" +
+            '<select id="' + id + '" name="' + nombre + '" data-campo="' +
+            claveCampo(nombre) + '" class="form-select" ' + (extra || "") + ">" +
+            opciones + "</select>" +
+            '<small class="field__error" id="' + id + '_error"></small>' +
+            "</div>";
+    }
+
+    function renderViajeros() {
+        if (!viajerosContainer) return;
+        asegurarViajeros();
+
+        viajerosContainer.innerHTML = viajeros.map((viajero, i) => {
+            const categoria = categoriaViajero(i);
+            const n = i + 1;
+            const campos = [
+                inputField("viajero_nombre_" + n, "viajero_nombre[]", "Nombre",
+                    viajero.nombre, 'autocomplete="given-name"'),
+                inputField("viajero_apellido_" + n, "viajero_apellido[]", "Apellido",
+                    viajero.apellido, 'autocomplete="family-name"'),
+                selectField("viajero_tipo_" + n, "viajero_tipo_documento[]",
+                    "Tipo de documento", opcionesTipo(viajero.tipo, categoria)),
+                inputField("viajero_documento_" + n, "viajero_documento[]",
+                    "Número de documento", viajero.documento, 'inputmode="text"'),
+                selectField("viajero_idioma_" + n, "viajero_idioma[]",
+                    "Idioma preferido", opcionesIdioma(viajero.idioma)),
+            ];
+
+            if (categoria === "menor") {
+                campos.push(
+                    '<div class="field">' +
+                    '<label class="field__label" for="viajero_edad_' + n + '">Edad</label>' +
+                    '<input type="number" id="viajero_edad_' + n + '" name="viajero_edad[]" ' +
+                    'data-campo="edad" class="form-input" min="2" max="17" inputmode="numeric" ' +
+                    'value="' + esc(viajero.edad) + '">' +
+                    '<small class="field__error" id="viajero_edad_' + n + '_error"></small>' +
+                    "</div>"
+                );
+            }
+
+            if (categoria === "bebe") {
+                campos.push(
+                    '<div class="field">' +
+                    '<label class="field__label" for="viajero_meses_' + n + '">Meses de edad</label>' +
+                    '<input type="number" id="viajero_meses_' + n + '" name="viajero_meses[]" ' +
+                    'data-campo="meses" class="form-input" min="0" max="23" inputmode="numeric" ' +
+                    'value="' + esc(viajero.meses) + '">' +
+                    '<small class="field__error" id="viajero_meses_' + n + '_error"></small>' +
+                    "</div>"
+                );
+            }
+
+            if (!aplicarTodos?.checked) {
+                campos.push(
+                    inputField("viajero_necesidades_" + n, "viajero_necesidades[]",
+                        "Necesidades de este viajero", viajero.necesidades,
+                        'placeholder="Ej. movilidad reducida"')
+                );
+            }
+
+            const etiqueta = categoria === "adulto"
+                ? "Adulto"
+                : categoria === "menor"
+                    ? "Menor"
+                    : "Bebé";
+
+            return '<div class="traveler-card" data-index="' + i + '">' +
+                '<div class="traveler-card__head">' +
+                "<strong>Viajero " + n + "</strong>" +
+                '<span class="traveler-badge">' + etiqueta + "</span>" +
+                "</div>" +
+                '<div class="traveler-card__fields">' + campos.join("") + "</div>" +
+                "</div>";
+        }).join("");
+    }
+
+    function marcarError(input, mensaje, marcar) {
+        if (!mensaje) return 0;
+        if (!marcar || !input) return 1;
+
+        const esContenedor = input.classList?.contains("date-field") ||
+            input.classList?.contains("date-picker");
+        const contenedor = input.closest(".field") ||
+            input.closest(".check-line") ||
+            (esContenedor ? input : null);
+        if (!contenedor) return 1;
+
+        const error = contenedor.querySelector(".field__error") ||
+            contenedor.querySelector(".js-date-error");
+        contenedor.classList.add("field--invalid");
+        if (input.matches?.("input, select")) {
+            input.setAttribute("aria-invalid", "true");
+        }
+        if (error) {
+            error.id = error.id || input.id + "_error";
+            error.textContent = mensaje;
+            error.hidden = false;
+            if (input.matches?.("input, select")) {
+                input.setAttribute("aria-describedby", error.id);
+            }
+        }
+        return 1;
+    }
+
+    function limpiarErrores() {
+        form.querySelectorAll(".field--invalid").forEach(nodo => {
+            nodo.classList.remove("field--invalid");
+            const input = nodo.querySelector("input, select");
+            if (input) {
+                input.removeAttribute("aria-invalid");
+                input.removeAttribute("aria-describedby");
+            }
+            [".field__error", ".js-date-error"].forEach(selector => {
+                const error = nodo.querySelector(selector);
+                if (error) {
+                    error.textContent = "";
+                    error.hidden = true;
+                }
+            });
+        });
+    }
+
+    function documentoValido(tipo, documento) {
+        const valor = String(documento || "").trim();
+        if (tipo === "CC" || tipo === "TI") return /^\d{6,12}$/.test(valor);
+        if (tipo === "CE") return /^[A-Za-z0-9]{6,12}$/.test(valor);
+        if (tipo === "RC") return /^[A-Za-z0-9-]{5,15}$/.test(valor);
+        if (tipo === "Pasaporte") return /^[A-Za-z0-9]{5,20}$/.test(valor);
+        return false;
+    }
+
+    function validarTodo(marcar) {
+        leerDOM();
+        if (marcar) limpiarErrores();
+
+        const errores = [];
+        const fail = (input, mensaje) => {
+            if (marcarError(input, mensaje, marcar)) errores.push(mensaje);
+        };
+
+        if (!inputSalida?.value) fail(campoSalida, "Elige la fecha de salida.");
+        if (!inputRegreso?.value) fail(campoRegreso, "Elige la fecha de regreso.");
+        if (!form.querySelector('input[name="alojamiento"]:checked')) {
+            fail(form.querySelector(".js-date-picker"), "Elige un alojamiento.");
+        }
+
+        if (DESTINO_AMAZONAS && cantidad("bebes") > 0) {
+            fail(inputBebes, "En Amazonas no se permiten bebés.");
+        }
+
+        viajerosContainer?.querySelectorAll(".traveler-card").forEach((card, i) => {
+            const dato = clave => card.querySelector('[data-campo="' + clave + '"]');
+            const nombre = dato("nombre");
+            const apellido = dato("apellido");
+            const tipo = dato("tipo");
+            const documento = dato("documento");
+            const idioma = dato("idioma");
+            const edad = dato("edad");
+            const meses = dato("meses");
+            const categoria = categoriaViajero(i);
+            const permitidos = TIPOS_DOC[categoria].map(([valor]) => valor);
+
+            if (!nombre?.value.trim()) fail(nombre, "Escribe el nombre.");
+            if (!apellido?.value.trim()) fail(apellido, "Escribe el apellido.");
+            if (!tipo?.value) {
+                fail(tipo, "Selecciona el tipo de documento.");
+            } else if (!permitidos.includes(tipo.value)) {
+                fail(tipo, "Para " + categoria + " usa " + permitidos.join(" o ") + ".");
+            }
+
+            const numero = documento?.value.trim() || "";
+            if (!numero) {
+                fail(documento, "Escribe el número de documento.");
+            } else if (tipo?.value && !documentoValido(tipo.value, numero)) {
+                fail(documento, "El número de documento no tiene un formato válido.");
+            }
+
+            if (!idioma?.value) fail(idioma, "Selecciona un idioma.");
+
+            if (categoria === "menor" && edad) {
+                const anios = Number(edad.value);
+                if (!Number.isInteger(anios) || anios < 2 || anios > 17) {
+                    fail(edad, "Los niños van de 2 a 17 años; desde 24 meses dejan de ser bebés.");
+                }
+            }
+
+            if (categoria === "bebe" && meses) {
+                const mesesNumero = Number(meses.value);
+                if (!Number.isInteger(mesesNumero) || mesesNumero < 0 || mesesNumero > 23) {
+                    fail(meses, "Desde los 24 meses deja de ser bebé: cambia a niño o corrige los meses (0 a 23).");
+                }
+            }
+        });
+
+        if (!terms?.checked) {
+            fail(terms, "Debes aceptar los términos y la política de privacidad.");
+        }
+
+        return errores;
+    }
+
+    function enfocarPrimerError() {
+        const primero = form.querySelector(".field--invalid");
+        if (!primero) return;
+        const control = primero.matches("input, select, textarea")
+            ? primero
+            : primero.querySelector("input, select, textarea");
+        primero.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (control) control.focus({ preventScroll: true });
+    }
+
+    function mostrarAlertaEdades(errores) {
+        if (!alertaEdadViajeros) return;
+
+        const avisos = errores.filter(mensaje =>
+            /beb|niño|años|meses/i.test(mensaje)
+        );
+        alertaEdadViajeros.textContent = avisos.join(" ");
+        alertaEdadViajeros.hidden = avisos.length === 0;
+    }
+
+    function mostrarErrores(errores) {
+        if (!alertaServidor) return;
+
+        alertaServidor.replaceChildren();
+        if (!errores.length) {
+            alertaServidor.hidden = true;
+            return;
+        }
+
+        const titulo = document.createElement("strong");
+        titulo.textContent = "Faltan " + errores.length + " campos por completar:";
+        const lista = document.createElement("ul");
+        errores.forEach(mensaje => {
+            const item = document.createElement("li");
+            item.textContent = mensaje;
+            lista.appendChild(item);
+        });
+        alertaServidor.append(titulo, lista);
+        alertaServidor.hidden = false;
+    }
+
+    function guardarBorrador() {
+        try {
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+                adultos: inputAdultos?.value,
+                menores: inputMenores?.value,
+                bebes: inputBebes?.value,
+                mascotas: inputMascotas?.value,
+                mascotasCantidad: form.querySelector('[name="mascotas_cantidad"]')?.value,
+                mascotasTipo: form.querySelector('[name="mascotas_tipo"]')?.value,
+                alergias: inputAlergias?.value,
+                aplicarTodos: aplicarTodos?.checked,
+                notas: notas?.value,
+                viajeros,
+            }));
+        } catch (error) { /* almacenamiento no disponible */ }
+    }
+
+    function restaurarBorrador() {
+        try {
+            const guardado = sessionStorage.getItem(STORAGE_KEY);
+            if (!guardado) return;
+            const datos = JSON.parse(guardado);
+            if (inputAdultos && datos.adultos) inputAdultos.value = datos.adultos;
+            if (inputMenores && datos.menores !== undefined) inputMenores.value = datos.menores;
+            if (inputBebes && datos.bebes !== undefined) inputBebes.value = datos.bebes;
+            if (inputMascotas && datos.mascotas) inputMascotas.value = datos.mascotas;
+            const cantidadMascotas = form.querySelector('[name="mascotas_cantidad"]');
+            if (cantidadMascotas && datos.mascotasCantidad) {
+                cantidadMascotas.value = datos.mascotasCantidad;
+            }
+            const tipoMascota = form.querySelector('[name="mascotas_tipo"]');
+            if (tipoMascota && datos.mascotasTipo) tipoMascota.value = datos.mascotasTipo;
+            if (inputAlergias && datos.alergias !== undefined) inputAlergias.value = datos.alergias;
+            if (aplicarTodos && datos.aplicarTodos !== undefined) {
+                aplicarTodos.checked = datos.aplicarTodos;
+            }
+            if (notas && datos.notas !== undefined) notas.value = datos.notas;
+            if (Array.isArray(datos.viajeros)) viajeros = datos.viajeros;
+        } catch (error) { /* borrador inválido */ }
+    }
+
+    function ocultarErrorServidor() {
+        if (alertaServidor) alertaServidor.hidden = true;
+    }
+
+    function actualizarTodo(renderizar) {
+        if (renderizar) renderViajeros();
+
+        if (inputAdultos) inputAdultos.value = cantidad("adultos");
+        if (inputMenores) inputMenores.value = cantidad("menores");
+        if (inputBebes) inputBebes.value = cantidad("bebes");
+        if (alertaBebesAmazonas) {
+            alertaBebesAmazonas.hidden = !(DESTINO_AMAZONAS && cantidad("bebes") > 0);
+        }
+        if (mascotasDetalle) mascotasDetalle.hidden = inputMascotas?.value !== "si";
+        if (notesCount) notesCount.textContent = (notas?.value || "").length;
+        if (inputAcepta) inputAcepta.value = terms?.checked ? "1" : "0";
+
+        actualizarResumen();
+        const errores = validarTodo(false);
+        mostrarAlertaEdades(errores);
+
+        if (btnReserva) btnReserva.disabled = false;
+        if (revisarBtn) revisarBtn.hidden = errores.length === 0;
+        if (pendingEl) {
+            pendingEl.textContent = errores.length
+                ? (errores.length <= 2
+                    ? errores.join(" · ")
+                    : errores.slice(0, 2).join(" · ") +
+                      " · y " + (errores.length - 2) + " más")
+                : "Todo listo para reservar";
+            pendingEl.classList.toggle("is-ok", errores.length === 0);
+        }
+        guardarBorrador();
+    }
+
+    form.querySelectorAll(".js-step-up, .js-step-down").forEach(boton => {
+        boton.addEventListener("click", () => {
+            const campo = boton.dataset.campo;
+            const input = campo === "adultos"
+                ? inputAdultos
+                : campo === "bebes"
+                    ? inputBebes
+                    : inputMenores;
+            const base = parseInt(input?.value, 10) || (campo === "adultos" ? 1 : 0);
+            const delta = boton.classList.contains("js-step-up") ? 1 : -1;
+            if (input) input.value = limitar(campo, base + delta);
+            leerDOM();
+            actualizarTodo(true);
+        });
+    });
+
+    aplicarTodos?.addEventListener("change", () => {
+        if (!aplicarTodos.checked) {
+            viajeros.forEach(viajero => { viajero.necesidades = ""; });
+        }
+        leerDOM();
+        actualizarTodo(true);
+    });
+
+    form.addEventListener("input", evento => {
+        if (evento.target?.classList.contains("stepper__value")) return;
+        ocultarErrorServidor();
+        actualizarTodo();
+    });
+
+    form.addEventListener("change", () => {
+        ocultarErrorServidor();
+        actualizarTodo();
+    });
+
+    revisarBtn?.addEventListener("click", () => {
+        const errores = validarTodo(true);
+        mostrarErrores(errores);
+        mostrarAlertaEdades(errores);
+        enfocarPrimerError();
+    });
+
+    form.addEventListener("submit", evento => {
+        evento.preventDefault();
+
+        const errores = validarTodo(true);
+        mostrarErrores(errores);
+        mostrarAlertaEdades(errores);
+        actualizarTodo();
+
+        if (errores.length) {
+            enfocarPrimerError();
+            return;
+        }
+        if (!inputSalida?.value || !inputRegreso?.value) {
+            mostrarError("Debes elegir las fechas del viaje.");
+            abrirPicker("salida");
+            return;
+        }
+
+        btnReserva.disabled = true;
+        btnReserva.classList.add("is-loading");
+        if (submitLabel) submitLabel.textContent = "Enviando reserva...";
+        form.submit();
+    });
+
+    restaurarBorrador();
+    renderViajeros();
+    pintarConfirmado();
+    abrirPicker("salida", false);
+    actualizarTodo();
+});
+</script>
+
+{% endblock %}

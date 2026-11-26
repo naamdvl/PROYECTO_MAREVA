@@ -1,0 +1,304 @@
+from datetime import date
+
+from repositories.reserva_repository import ReservaRepository
+from services.encuesta_services import EncuestaService
+
+
+class ReservaService:
+
+    def __init__(self):
+
+        self.repo = ReservaRepository()
+
+        self.encuesta_service = EncuestaService()
+
+
+    def listar_reservas_admin(self):
+
+        return self.repo.listar_reservas_admin()
+
+
+    def confirmar_reserva(
+        self,
+        id_cliente,
+        id_paquete,
+        id_salida,
+        fecha_viaje,
+        cant_adultos,
+        cant_menores,
+        observaciones,
+        acepta_no_reembolso,
+        alergias,
+        mascotas,
+        plan,
+        metodo_contacto,
+        extras_ids,
+        viajeros,
+        precio_total=None
+    ):
+
+        resultado = self.repo.crear_reserva(
+
+            id_cliente=id_cliente,
+
+            id_paquete=id_paquete,
+
+            id_salida=id_salida,
+
+            fecha_viaje=fecha_viaje,
+
+            cant_adultos=cant_adultos,
+
+            cant_menores=cant_menores,
+
+            observaciones=observaciones,
+
+            acepta_no_reembolso=acepta_no_reembolso,
+
+            alergias=alergias,
+
+            mascotas=mascotas,
+
+            plan=plan,
+
+            metodo_contacto=metodo_contacto,
+
+            precio_total=precio_total
+
+        )
+
+
+        if not resultado["ok"]:
+            return resultado
+
+
+        if extras_ids:
+
+            self.repo.agregar_servicios_extra(
+                resultado["id_reserva"],
+                extras_ids
+            )
+
+
+        if viajeros:
+
+            self.repo.agregar_viajeros(
+                resultado["id_reserva"],
+                viajeros
+            )
+
+
+        return resultado
+
+
+    def actualizar_viajero(
+        self,
+        id_viajero,
+        id_cliente,
+        nombre,
+        apellido,
+        tipo_documento,
+        numero_documento
+    ):
+
+        return self.repo.actualizar_viajero(
+
+            id_viajero,
+
+            id_cliente,
+
+            nombre,
+
+            apellido,
+
+            tipo_documento,
+
+            numero_documento
+
+        )
+
+
+    def obtener_viajeros_reserva(
+        self,
+        id_reserva
+    ):
+
+        return self.repo.obtener_viajeros_reserva(
+            id_reserva
+        )
+
+
+    def obtener_reserva_cliente(
+        self,
+        id_reserva,
+        id_cliente
+    ):
+
+        return self.repo.obtener_reserva_cliente(
+            id_reserva,
+            id_cliente
+        )
+
+
+    def obtener_reserva_con_viajeros(
+        self,
+        id_reserva,
+        id_cliente
+    ):
+
+        return self.repo.obtener_reserva_con_viajeros(
+            id_reserva,
+            id_cliente
+        )
+
+
+
+    def listar_reservas_admin(self):
+
+        return self.repo.listar_reservas_admin()
+
+
+    def marcar_reembolso_realizado(
+        self,
+        id_reserva
+    ):
+
+        return self.repo.marcar_reembolso_realizado(
+            id_reserva
+        )
+
+
+    def obtener_ultima_reserva(
+        self,
+        id_cliente
+    ):
+
+        return self.repo.obtener_ultima_reserva_cliente(
+            id_cliente
+        )
+
+
+    def completar_reserva(
+        self,
+        id_reserva
+    ):
+
+        reserva = self.repo.obtener_datos_encuesta(
+            id_reserva
+        )
+
+
+        if not reserva:
+
+            return {
+                "ok": False,
+                "error": "Reserva no encontrada."
+            }
+
+
+        if (
+            reserva["estado"] == "completada"
+            and reserva.get("encuesta_enviada")
+        ):
+
+            return {
+                "ok": False,
+                "error": "La reserva ya está completada."
+            }
+
+        fecha_fin = reserva.get("fecha_fin")
+
+        if fecha_fin and fecha_fin > date.today():
+
+            return {
+                "ok": False,
+                "error": (
+                    "La reserva solo puede completarse después de la "
+                    "fecha de regreso del viaje."
+                )
+            }
+
+        if not fecha_fin:
+            return {
+                "ok": False,
+                "error": (
+                    "La reserva no tiene una fecha de viaje válida "
+                    "para completarse."
+                )
+            }
+
+
+        resultado = self.repo.marcar_completada(
+            id_reserva
+        )
+
+
+        if not resultado["ok"]:
+            return resultado
+
+
+        envio = self.encuesta_service.enviar_encuesta(
+
+            reserva["correo"],
+
+            reserva["nombre"],
+
+            id_reserva,
+
+            reserva.get("paquete")
+
+        )
+
+
+        if not envio["ok"]:
+
+            print(
+                "La reserva fue completada, "
+                "pero no se pudo enviar la encuesta."
+            )
+
+
+        return {
+            "ok": True,
+            "encuesta_enviada": envio["ok"]
+        }
+
+    def finalizar_viajes_pasados(self):
+        reservas = self.repo.obtener_reservas_para_finalizar()
+        finalizadas = 0
+        encuestas = 0
+
+        for reserva in reservas:
+            if self.repo.finalizar_automaticamente(reserva["id_reserva"]):
+                finalizadas += 1
+
+            envio = self.encuesta_service.enviar_encuesta(
+                reserva["correo"],
+                reserva["nombre"],
+                reserva["id_reserva"],
+                reserva["paquete"],
+            )
+
+            if envio.get("ok"):
+                self.repo.marcar_encuesta_enviada(reserva["id_reserva"])
+                encuestas += 1
+
+        return {"finalizadas": finalizadas, "encuestas": encuestas}
+
+    def listar_reservas_cliente(self, id_cliente):
+        return self.repo.listar_reservas_cliente(id_cliente)
+
+    def cambiar_estado_reserva(self, id_reserva, id_cliente):
+        return self.repo.cambiar_estado_reserva(id_reserva, id_cliente)
+
+    def obtener_estado_reserva(self, id_reserva, id_cliente):
+        return self.repo.obtener_reserva_cliente(
+            id_reserva,
+            id_cliente
+        )
+
+    def cancelar_reserva_cliente(self, id_reserva, id_cliente):
+        return self.repo.cancelar_reserva_cliente(
+            id_reserva,
+            id_cliente
+        )
