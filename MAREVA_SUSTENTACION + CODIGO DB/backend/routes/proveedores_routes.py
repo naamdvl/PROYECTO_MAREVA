@@ -42,3 +42,16 @@ methods=["POST"]
 )
 def firmar_contrato(id_contrato):
     return controller.firmar_contrato(id_contrato)
+
+
+@proveedor_bp.route("/reservas", methods=["GET"])
+def reservas():
+    return controller.listar_reservas()
+
+
+@proveedor_bp.route(
+    "/reservas/<int:id_reserva>/completar",
+    methods=["POST"]
+)
+def completar_reserva(id_reserva):
+    return controller.completar_reserva(id_reserva)

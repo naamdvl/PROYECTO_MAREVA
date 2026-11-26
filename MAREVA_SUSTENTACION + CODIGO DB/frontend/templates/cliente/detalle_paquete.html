@@ -77,6 +77,19 @@
                 <strong>${{ "{:,.0f}".format(paquete.precio|float) }}</strong>
             </div>
 
+            {% set promedio_hero = paquete.calificacion_promedio|float|default(0) %}
+            {% set llenas_hero = promedio_hero|round(0, 'floor')|int %}
+            <div class="rating-pill rating-pill--hero" title="Valoración media de los viajeros">
+                <span class="rating-pill__stars">
+                    {% for i in range(1, 6) %}{{ '★' if i <= llenas_hero else '☆' }}{% endfor %}
+                </span>
+                <span>{{ '%.1f'|format(promedio_hero) }}</span>
+                <small>({{ paquete.total_resenas|default(0) }} opiniones)</small>
+                {% if resenas %}
+                    <a href="#opiniones" style="color:inherit;margin-left:.25rem;">Ver reseñas</a>
+                {% endif %}
+            </div>
+
             <div class="public-booking-note">
                 ✓ Selecciona tu alojamiento, alimentación, transporte y extras.
                 <strong>Al finalizar, si no has iniciado sesión, te pediremos
@@ -751,60 +764,6 @@
 
 
             <!-- =====================================================
-                 PERSONALIZACIÓN (informativa)
-            ====================================================== -->
-
-            <div class="detail-panel detail-panel--wide">
-
-                <span class="eyebrow">PERSONALIZACIÓN</span>
-                <h2>Adapta tu experiencia</h2>
-
-                {% if paquete.personalizable %}
-
-                    <p>
-                        Este paquete permite solicitar ajustes y
-                        servicios adicionales durante el proceso de reserva.
-                    </p>
-
-                    <span class="status-positive">✓ Paquete personalizable</span>
-
-                {% else %}
-
-                    <p>
-                        Este paquete cuenta con una configuración definida
-                        de servicios.
-                    </p>
-
-                    <span class="status-neutral">Configuración estándar</span>
-
-                {% endif %}
-
-            </div>
-
-            <!-- =====================================================
-                 PROGRESO DE LA RESERVA
-            ====================================================== -->
-
-            <div class="detail-panel detail-panel--wide booking-progress js-booking-progress">
-
-                <div class="booking-progress__head">
-                    <span class="eyebrow">TU RESERVA</span>
-                    <strong class="js-progress-text">0 de 7 pasos completos</strong>
-                </div>
-
-                <div class="booking-progress__steps" aria-label="Progreso de la reserva">
-                    <span class="booking-step js-step" data-step="fechas">Fechas</span>
-                    <span class="booking-step js-step" data-step="alojamiento">Alojamiento</span>
-                    <span class="booking-step js-step" data-step="alimentacion">Comidas</span>
-                    <span class="booking-step js-step" data-step="transporte">Transporte</span>
-                    <span class="booking-step js-step" data-step="actividades">Actividades</span>
-                    <span class="booking-step js-step" data-step="viajeros">Viajeros</span>
-                    <span class="booking-step js-step" data-step="indicaciones">Indicaciones</span>
-                </div>
-
-            </div>
-
-            <!-- =====================================================
                  VIAJEROS
             ====================================================== -->
 
@@ -1012,6 +971,106 @@
 
     </div>
 
+</section>
+
+
+<section class="section reviews-section" id="opiniones">
+    <div class="container">
+
+        <div class="section-heading-row">
+            <div>
+                <span class="eyebrow">OPINIONES REALES</span>
+                <h2>Lo que dicen los viajeros</h2>
+                <p class="muted">Experiencias compartidas por clientes que ya viajaron con MAREVA.</p>
+            </div>
+        </div>
+
+        <div class="reviews-layout">
+
+            <div>
+                <div class="review-summary">
+                    <div class="review-summary__score">{{ '%.1f'|format(promedio_hero) }}</div>
+                    <div class="review-summary__stars">
+                        {% for i in range(1, 6) %}{{ '★' if i <= llenas_hero else '☆' }}{% endfor %}
+                    </div>
+                    <p>{{ paquete.total_resenas|default(0) }} opiniones publicadas</p>
+                </div>
+
+                <div class="review-list">
+                    {% for r in resenas %}
+                        <article class="review-card">
+                            <div class="review-card__top">
+                                <div>
+                                    <h3>{{ r.nombre }} {{ r.apellido|first }}.</h3>
+                                    <small>{{ r.fecha.strftime('%d/%m/%Y') if r.fecha else '' }}</small>
+                                </div>
+                                <span class="review-card__stars">
+                                    {% for i in range(1, 6) %}{{ '★' if r.calificacion and i <= r.calificacion else '☆' }}{% endfor %}
+                                </span>
+                            </div>
+                            {% if r.titulo %}<h4>{{ r.titulo }}</h4>{% endif %}
+                            {% if r.comentario %}<p>{{ r.comentario }}</p>{% endif %}
+                            {% if r.calificacion_servicio %}
+                                <div class="review-card__service">Atención del servicio: {{ r.calificacion_servicio }}/5</div>
+                            {% endif %}
+                        </article>
+                    {% else %}
+                        <div class="empty-state">
+                            <span>⭐</span>
+                            <p>Aún no hay opiniones. ¡Sé la primera persona en compartir tu experiencia!</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if id_cliente %}
+                <div class="review-form-card">
+                    {% if ya_reseno %}
+                        <h3>¡Gracias por tu opinión!</h3>
+                        <p>Ya publicaste una reseña sobre este paquete. Puedes verla arriba.</p>
+                    {% else %}
+                        <h3>Comparte tu experiencia</h3>
+                        <p>Tu opinión ayuda a otros viajeros a elegir con confianza.</p>
+
+                        <form method="post" action="{{ url_for('paquetes.crear_resena', slug=paquete.slug) }}">
+                            <label class="field-label">Valoración general *</label>
+                            <div class="review-stars" data-star-picker data-name="calificacion" data-value="0">
+                                {% for i in range(1, 6) %}
+                                    <button type="button" data-star="{{ i }}" aria-label="{{ i }} estrellas">★</button>
+                                {% endfor %}
+                                <input type="hidden" name="calificacion" value="0">
+                                <span class="review-stars__label">Elige tu nota</span>
+                            </div>
+
+                            <label class="field-label">Atención del servicio (opcional)</label>
+                            <div class="review-stars" data-star-picker data-name="calificacion_servicio" data-value="0">
+                                {% for i in range(1, 6) %}
+                                    <button type="button" data-star="{{ i }}" aria-label="{{ i }} estrellas">★</button>
+                                {% endfor %}
+                                <input type="hidden" name="calificacion_servicio" value="">
+                                <span class="review-stars__label">Elige tu nota</span>
+                            </div>
+
+                            <label class="field-label" for="tituloResena">Título (opcional)</label>
+                            <input id="tituloResena" type="text" name="titulo" maxlength="120" placeholder="Resume tu experiencia">
+
+                            <label class="field-label" for="comentarioResena">Tu comentario (opcional)</label>
+                            <textarea id="comentarioResena" name="comentario" maxlength="1200" placeholder="¿Qué te gustó? ¿Qué mejorarías?"></textarea>
+
+                            <button type="submit" class="btn btn-primary">Publicar opinión</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="review-form-card">
+                    <h3>¿Ya viajaste con nosotros?</h3>
+                    <p>Inicia sesión como cliente para publicar tu opinión sobre este paquete.</p>
+                    <a class="btn btn-outline" href="{{ url_for('auth.mostrar_login', next=request.path) }}">Iniciar sesión</a>
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
 </section>
 
 {% set texto_destino = (
@@ -1546,8 +1605,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const notesCount = form.querySelector(".js-notes-count");
     const terms = form.querySelector(".js-terms");
     const inputAcepta = document.getElementById("inputAcepta");
-    const progressText = form.querySelector(".js-progress-text");
-    const pasos = [...form.querySelectorAll(".js-step")];
 
     const TIPOS_DOC = {
         adulto: [
@@ -1892,32 +1949,6 @@ document.addEventListener("DOMContentLoaded", () => {
         alertaServidor.hidden = false;
     }
 
-    function actualizarProgreso() {
-        const Grupo = nombre =>
-            !form.querySelector('input[name="' + nombre + '"]') ||
-            !!form.querySelector('input[name="' + nombre + '"]:checked');
-
-        const viajerosCompletos = validarTodo(false).length === 0;
-
-        const hechos = {
-            fechas: !!(inputSalida?.value && inputRegreso?.value),
-            alojamiento: Grupo("alojamiento"),
-            alimentacion: Grupo("alimentacion"),
-            transporte: Grupo("transporte"),
-            actividades: Grupo("actividades"),
-            viajeros: !!viajerosCompletos,
-            indicaciones: !!terms?.checked,
-        };
-
-        let completos = 0;
-        pasos.forEach(paso => {
-            const listo = !!hechos[paso.dataset.step];
-            paso.classList.toggle("is-done", listo);
-            if (listo) completos++;
-        });
-        if (progressText) progressText.textContent = completos + " de 7 pasos completos";
-    }
-
     function guardarBorrador() {
         try {
             sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -1979,7 +2010,6 @@ document.addEventListener("DOMContentLoaded", () => {
         actualizarResumen();
         const errores = validarTodo(false);
         mostrarAlertaEdades(errores);
-        actualizarProgreso();
 
         if (btnReserva) btnReserva.disabled = false;
         if (revisarBtn) revisarBtn.hidden = errores.length === 0;

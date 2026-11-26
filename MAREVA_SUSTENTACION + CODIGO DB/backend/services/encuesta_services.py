@@ -1,15 +1,70 @@
 from repositories.encuesta_repository import EncuestaRepository
+from repositories.resena_repository import ResenaRepository
 from repositories.reserva_repository import ReservaRepository
+from services.correo_service import CorreoService
+from services.resena_services import ResenaService
 
 class EncuestaService:
 
     def __init__(self):
         self.encuesta_repo = EncuestaRepository()
+        self.resena_repo = ResenaRepository()
+        self.resena_service = ResenaService()
         self.reserva_repo = ReservaRepository()
+        self.correo_service = CorreoService()
 
-    def enviar_encuesta(self, correo_cliente, nombre_cliente, id_reserva):
-        print(f"[SKIP EMAIL] Encuesta pendiente para {correo_cliente} (reserva {id_reserva})")
-        return {"ok": True}
+    def enviar_encuesta(
+        self,
+        correo_cliente,
+        nombre_cliente,
+        id_reserva,
+        paquete=None,
+    ):
+        return self.correo_service.enviar_encuesta(
+            correo_cliente,
+            nombre_cliente,
+            id_reserva,
+            paquete,
+        )
+
+    def guardar_encuesta_rapida(
+        self,
+        id_reserva,
+        id_cliente,
+        datos,
+    ):
+        reserva = self.resena_repo.obtener_reserva_valida(
+            id_reserva,
+            id_cliente,
+        )
+
+        if not reserva:
+            return {
+                "ok": False,
+                "error": (
+                    "La encuesta no está disponible para esta reserva."
+                ),
+            }
+
+        if (
+            self.resena_repo.ya_reseno_reserva(id_reserva)
+            or self.encuesta_repo.ya_respondida(id_reserva)
+        ):
+            return {
+                "ok": True,
+                "mensaje": "Ya respondiste esta encuesta. ¡Gracias!",
+                "duplicado": True,
+            }
+
+        return self.resena_service.guardar_parcial(
+            reserva["id_paquete"],
+            id_cliente,
+            id_reserva,
+            datos.get("calificacion"),
+            datos.get("calificacion_servicio") or None,
+            datos.get("titulo", ""),
+            datos.get("comentario", ""),
+        )
 
     def obtener_encuesta(self, id_reserva, id_cliente):
 
@@ -28,6 +83,15 @@ class EncuestaService:
             return {
                 "ok": False,
                 "error": "La encuesta estará disponible cuando el viaje haya sido completado."
+            }
+
+        if (
+            self.resena_repo.ya_reseno_reserva(id_reserva)
+            or self.encuesta_repo.ya_respondida(id_reserva)
+        ):
+            return {
+                "ok": False,
+                "error": "Ya respondiste la encuesta de esta reserva. ¡Gracias!"
             }
 
         preguntas = self.encuesta_repo.obtener_preguntas_activas()
@@ -60,7 +124,7 @@ class EncuestaService:
         if not respuestas:
             return {
                 "ok": False,
-                "error": "Debes responder todas las preguntas."
+                "error": "Responde al menos una pregunta de la encuesta."
             }
 
         reserva = self.encuesta_repo.verificar_reserva_cliente(
@@ -72,6 +136,15 @@ class EncuestaService:
             return {
                 "ok": False,
                 "error": "La reserva no existe o no te pertenece."
+            }
+
+        if (
+            self.resena_repo.ya_reseno_reserva(id_reserva)
+            or self.encuesta_repo.ya_respondida(id_reserva)
+        ):
+            return {
+                "ok": False,
+                "error": "Ya respondiste la encuesta de esta reserva. ¡Gracias!"
             }
 
         preguntas = self.encuesta_repo.obtener_todas_preguntas()
@@ -106,15 +179,6 @@ class EncuestaService:
                 }
 
             respuestas_dict[id_pregunta] = respuesta["valor"]
-
-        # Exigir una respuesta para cada pregunta mostrada.
-        ids_preguntas = set(preguntas_dict.keys())
-
-        if set(respuestas_dict.keys()) != ids_preguntas:
-            return {
-                "ok": False,
-                "error": "Debes responder todas las preguntas."
-            }
 
         respuestas_procesadas = []
 

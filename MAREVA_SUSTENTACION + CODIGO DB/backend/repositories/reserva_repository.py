@@ -699,10 +699,20 @@ class ReservaRepository:
                     r.estado,
                     c.id_cliente,
                     c.nombre,
-                    c.correo
+                    c.correo,
+                    COALESCE(
+                        (SELECT MIN(it.fecha_regreso)
+                         FROM itinerario_viaje it
+                         WHERE it.id_reserva = r.id_reserva),
+                        r.fecha_viaje
+                    ) AS fecha_fin,
+                    p.nombre AS paquete,
+                    r.encuesta_enviada
                 FROM reserva r
                 JOIN cliente c
                     ON c.id_cliente = r.id_cliente
+                JOIN paquete_turistico p
+                    ON p.id_paquete = r.id_paquete
                 WHERE r.id_reserva = %s
                 """,
                 (id_reserva,)
@@ -721,7 +731,10 @@ class ReservaRepository:
                 "estado": fila[1],
                 "id_cliente": fila[2],
                 "nombre": fila[3],
-                "correo": fila[4]
+                "correo": fila[4],
+                "fecha_fin": fila[5],
+                "paquete": fila[6],
+                "encuesta_enviada": fila[7]
             }
 
 
@@ -851,14 +864,26 @@ class ReservaRepository:
 
             cursor.execute(
                 """
-                UPDATE reserva
+                UPDATE reserva r
 
-                SET estado = 'completada'
+                SET
+                    estado = 'completada',
+                    encuesta_enviada = TRUE,
+                    encuesta_enviada_fecha = NOW()
 
-                WHERE id_reserva = %s
-                  AND estado <> 'completada'
+                WHERE r.id_reserva = %s
+                  AND (
+                      r.estado <> 'completada'
+                      OR NOT r.encuesta_enviada
+                  )
+                  AND COALESCE(
+                      (SELECT MIN(it.fecha_regreso)
+                       FROM itinerario_viaje it
+                       WHERE it.id_reserva = r.id_reserva),
+                      r.fecha_viaje
+                  ) <= CURRENT_DATE
 
-                RETURNING id_reserva
+                RETURNING r.id_reserva
                 """,
                 (id_reserva,)
             )
@@ -1041,3 +1066,108 @@ class ReservaRepository:
             }
             for fila in filas
         ]
+
+    def obtener_reservas_para_finalizar(self):
+        cursor = self.conexion.cursor()
+
+        try:
+            cursor.execute(
+                """
+                SELECT
+                    r.id_reserva,
+                    cl.correo,
+                    cl.nombre,
+                    p.nombre AS paquete
+                FROM reserva r
+                JOIN cliente cl ON cl.id_cliente = r.id_cliente
+                JOIN paquete_turistico p ON p.id_paquete = r.id_paquete
+                WHERE r.estado IN (
+                    'confirmada', 'pagada', 'en_proceso', 'completada'
+                )
+                  AND NOT r.encuesta_enviada
+                  AND COALESCE(
+                      (SELECT MIN(it.fecha_regreso)
+                       FROM itinerario_viaje it
+                       WHERE it.id_reserva = r.id_reserva),
+                      r.fecha_viaje
+                  ) <= CURRENT_DATE
+                ORDER BY r.fecha_viaje, r.id_reserva
+                LIMIT 50
+                """
+            )
+
+            filas = cursor.fetchall()
+            cursor.close()
+            self.conexion.rollback()
+
+            return [
+                {
+                    "id_reserva": fila[0],
+                    "correo": fila[1],
+                    "nombre": fila[2],
+                    "paquete": fila[3],
+                }
+                for fila in filas
+            ]
+
+        except Exception:
+            self.conexion.rollback()
+            cursor.close()
+            return []
+
+    def finalizar_automaticamente(self, id_reserva):
+        cursor = self.conexion.cursor()
+
+        try:
+            cursor.execute(
+                """
+                UPDATE reserva r
+                SET estado = 'completada'
+                WHERE r.id_reserva = %s
+                  AND r.estado IN ('confirmada', 'pagada', 'en_proceso')
+                  AND COALESCE(
+                      (SELECT MIN(it.fecha_regreso)
+                       FROM itinerario_viaje it
+                       WHERE it.id_reserva = r.id_reserva),
+                      r.fecha_viaje
+                  ) <= CURRENT_DATE
+                RETURNING r.id_reserva
+                """,
+                (id_reserva,),
+            )
+
+            fila = cursor.fetchone()
+            self.conexion.commit()
+            cursor.close()
+            return fila is not None
+
+        except Exception:
+            self.conexion.rollback()
+            cursor.close()
+            return False
+
+    def marcar_encuesta_enviada(self, id_reserva):
+        cursor = self.conexion.cursor()
+
+        try:
+            cursor.execute(
+                """
+                UPDATE reserva
+                SET
+                    encuesta_enviada = TRUE,
+                    encuesta_enviada_fecha = NOW()
+                WHERE id_reserva = %s
+                RETURNING id_reserva
+                """,
+                (id_reserva,),
+            )
+
+            fila = cursor.fetchone()
+            self.conexion.commit()
+            cursor.close()
+            return fila is not None
+
+        except Exception:
+            self.conexion.rollback()
+            cursor.close()
+            return False

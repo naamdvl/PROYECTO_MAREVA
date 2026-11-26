@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="section guia-panel">
+
+<div class="container">
+
+    <div class="guia-hero" style="padding-bottom: 2rem;">
+        <div class="guia-hero__content">
+            <div>
+                <p class="section-label">Operación de viajes</p>
+                <h1>Mis reservas</h1>
+                <p>
+                    Consulta las reservas de tus paquetes. Puedes marcarlas como completadas
+                    solo después de la fecha de regreso del viaje.
+                </p>
+            </div>
+            <div class="guia-profile-chip">
+                <strong>Proveedor</strong>
+                <span>{{ session.get('usuario', {}).get('nombre', '') }}</span>
+            </div>
+        </div>
+    </div>
+
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+        {% if mensajes %}
+            {% for categoria, mensaje in mensajes %}
+                <div class="alert {% if categoria == 'success' %}alert-success{% else %}alert-danger{% endif %}" style="margin-bottom: 1rem;">
+                    {{ mensaje }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <section class="guia-section">
+
+        <div class="section-heading">
+            <div>
+                <p class="section-label">Seguimiento</p>
+                <h2>Reservas asociadas a tus contratos</h2>
+            </div>
+            <span class="badge badge-purple">
+                {{ reservas|length }} reserva{% if reservas|length != 1 %}s{% endif %}
+            </span>
+        </div>
+
+        {% if reservas %}
+            <div class="guia-reservas">
+                {% for reserva in reservas %}
+                    <article class="guia-reserva">
+                        <header>
+                            <div>
+                                <span class="guia-reserva__code">{{ reserva.codigo_unico }}</span>
+                                <h3>{{ reserva.paquete }}</h3>
+                                <p>{{ reserva.nombre }} {{ reserva.apellido }}</p>
+                            </div>
+                            <div>
+                                <span class="estado estado--{{ reserva.estado|replace(' ', '-') }}">
+                                    {{ reserva.estado|replace('_', ' ')|capitalize }}
+                                </span>
+                            </div>
+                        </header>
+
+                        <div class="guia-reserva__grid">
+                            <div>
+                                <small>Salida</small>
+                                <strong>{{ reserva.fecha_viaje.strftime('%d/%m/%Y') if reserva.fecha_viaje else 'Por definir' }}</strong>
+                            </div>
+                            <div>
+                                <small>Regreso</small>
+                                <strong>{{ reserva.fecha_fin.strftime('%d/%m/%Y') if reserva.fecha_fin else 'Por definir' }}</strong>
+                            </div>
+                            <div>
+                                <small>Encuesta</small>
+                                <strong>{{ 'Enviada' if reserva.encuesta_enviada else 'Pendiente' }}</strong>
+                            </div>
+                        </div>
+
+                        <footer style="margin-top:1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+                            {% if reserva.puede_completar %}
+                                <form method="post" action="{{ url_for('proveedor.completar_reserva', id_reserva=reserva.id_reserva) }}">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        Marcar completada y enviar encuesta
+                                    </button>
+                                </form>
+                            {% elif reserva.estado == 'completada' %}
+                                <span class="muted">Viaje finalizado</span>
+                            {% else %}
+                                <span class="muted">Disponible después de la fecha de regreso</span>
+                            {% endif %}
+                        </footer>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <span>🧳</span>
+                <p>Aún no hay reservas asociadas a tus contratos.</p>
+            </div>
+        {% endif %}
+
+    </section>
+
+</div>
+
+</section>
+
+{% endblock %}

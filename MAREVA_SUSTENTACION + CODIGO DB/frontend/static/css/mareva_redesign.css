@@ -1855,22 +1855,6 @@ a {
     margin-bottom: 20px;
 }
 
-.booking-step {
-    width: 38px;
-    height: 38px;
-
-    flex: 0 0 auto;
-
-    display: grid;
-    place-items: center;
-
-    border-radius: 12px;
-    background: #e9f7f3;
-    color: #167e76;
-
-    font-weight: 900;
-}
-
 .booking-card__header h2 {
     margin: 3px 0;
     font-size: 1.35rem;
@@ -2061,65 +2045,6 @@ a {
     font-size: .8rem;
 }
 
-
-/* =========================================================
-   CUSTOMIZATION
-   ========================================================= */
-
-.customizer-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 9px;
-}
-
-.custom-option {
-    display: grid;
-    grid-template-columns: auto auto 1fr auto;
-    align-items: center;
-    gap: 10px;
-
-    padding: 13px;
-
-    border: 1px solid #dfe9e6;
-    border-radius: 15px;
-
-    cursor: pointer;
-    transition: var(--mareva-transition);
-}
-
-.custom-option input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.custom-option__icon {
-    font-size: 1.25rem;
-}
-
-.custom-option small {
-    display: block;
-    color: #7a8897;
-    font-size: .68rem;
-}
-
-.custom-option b {
-    opacity: .25;
-    color: #158473;
-}
-
-.custom-option:has(input:checked) {
-    border-color: #7ccfc1;
-    background: #effaf7;
-}
-
-.custom-option:has(input:checked) b {
-    opacity: 1;
-}
-
-.custom-bottom {
-    margin-top: 12px;
-}
 
 .extras-heading {
     display: flex;
@@ -3089,7 +3014,7 @@ a {
 
 .site-footer__top {
     display: grid;
-    grid-template-columns: 1.4fr .7fr .7fr 1.5fr;
+    grid-template-columns: 1.3fr .65fr .65fr 1.3fr .8fr;
     gap: 28px;
 }
 
@@ -3157,6 +3082,134 @@ a {
     color: #9fb7bc;
     font-size: .62rem;
     line-height: 1.5;
+}
+
+.video-block small {
+    display: block;
+    max-width: 240px;
+
+    color: #9fb7bc;
+    font-size: .62rem;
+    line-height: 1.5;
+}
+
+.video-block__button {
+    align-self: flex-start;
+
+    padding: 9px 13px;
+
+    border: 1px solid #ffd34d;
+    border-radius: 999px;
+
+    background: rgba(255, 211, 77, .12);
+    color: #ffd34d;
+    font: inherit;
+    font-size: .72rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+
+.video-block__button:hover {
+    background: #ffd34d;
+    color: #24104f;
+    transform: translateY(-1px);
+}
+
+.video-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.video-modal[hidden] {
+    display: none;
+}
+
+.video-modal__backdrop {
+    position: absolute;
+    inset: 0;
+
+    background: rgba(20, 10, 45, .82);
+    backdrop-filter: blur(6px);
+}
+
+.video-modal__card {
+    position: relative;
+    width: min(960px, 100%);
+
+    padding: 18px;
+
+    border: 1px solid rgba(255, 255, 255, .18);
+    border-radius: 22px;
+
+    background: linear-gradient(135deg, #24104f 0%, #4b1696 52%, #2d70d6 100%);
+    box-shadow: 0 30px 90px rgba(9, 3, 30, .55);
+    color: #fff;
+}
+
+.video-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+
+    margin-bottom: 12px;
+}
+
+.video-modal__eyebrow {
+    display: block;
+    margin-bottom: 3px;
+
+    color: #ffd34d;
+    font-size: .65rem;
+    font-weight: 900;
+    letter-spacing: .12em;
+}
+
+.video-modal__header h2 {
+    font-size: 1.25rem;
+}
+
+.video-modal__close {
+    width: 38px;
+    height: 38px;
+
+    border: 0;
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, .16);
+    color: #fff;
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.video-modal__close:hover {
+    background: #ff6f61;
+}
+
+.video-modal__player {
+    display: block;
+    width: 100%;
+    max-height: 70vh;
+
+    border-radius: 14px;
+    background: #000;
+}
+
+.video-modal__hint {
+    margin: 10px 2px 0;
+
+    color: #fff4dc;
+    font-size: .72rem;
+}
+
+body.video-modal-open {
+    overflow: hidden;
 }
 
 .site-footer__bottom {
@@ -3334,7 +3387,6 @@ a {
         min-width: 150px;
     }
 
-    .customizer-grid,
     .account-edit-grid,
     .account-summary,
     .included-grid {

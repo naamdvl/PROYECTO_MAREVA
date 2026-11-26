@@ -76,7 +76,40 @@ class AuthRepository:
         )
 
         return usuario
-    
+
+    def correo_en_uso(self, correo, excluir_correo=None):
+        cursor = self.conexion.cursor()
+        excluir = (excluir_correo or "").strip().lower()
+
+        try:
+            cursor.execute(
+                """
+                SELECT
+                    EXISTS (
+                        SELECT 1 FROM cliente
+                        WHERE LOWER(correo) = LOWER(%s)
+                          AND (%s = '' OR LOWER(correo) <> %s)
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM proveedor
+                        WHERE LOWER(correo) = LOWER(%s)
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM guia_turistico
+                        WHERE LOWER(correo) = LOWER(%s)
+                    )
+                """,
+                (correo, excluir, excluir, correo, correo),
+            )
+            en_uso = bool(cursor.fetchone()[0])
+            cursor.close()
+            self.conexion.rollback()
+            return en_uso
+        except Exception:
+            self.conexion.rollback()
+            cursor.close()
+            return True
+
     # Obtiene la contraseña de un usuario por su correo electrónico
     def estado_acceso_cliente(self, correo):
         cursor = self.conexion.cursor()

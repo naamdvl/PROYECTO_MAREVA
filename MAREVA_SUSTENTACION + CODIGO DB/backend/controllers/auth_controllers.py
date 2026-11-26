@@ -34,6 +34,13 @@ class AuthController:
         def fallar(mensaje):
             return self._error_registro(mensaje)
 
+        rol = request.form.get("rol", "cliente").strip().lower()
+        if rol != "cliente":
+            return fallar("El registro público solo permite cuentas de cliente.")
+
+        if self.service.correo_en_uso(correo):
+            return fallar("Ya existe una cuenta con ese correo.")
+
         if not re.fullmatch(r"[A-Za-zÁÉÍÓÚáéíóúÑñ ]{2,50}", nombre):
             return fallar("El nombre solo puede contener letras.")
 
@@ -70,7 +77,7 @@ class AuthController:
         if not re.fullmatch(correo_valido, correo):
             return fallar("El correo electrónico no es válido.")
 
-        if not self._correo_verificado(correo):
+        if not self._correo_verificado(correo, "registro"):
             return fallar("Debes verificar el correo electrónico antes de crear la cuenta.")
 
         if not terminos:
@@ -96,6 +103,13 @@ class AuthController:
 
         if resultado["ok"]:
             session.pop("correo_verificado", None)
+            try:
+                self.correo_service.enviar_confirmacion_cuenta(
+                    correo,
+                    f"{nombre} {apellido}".strip()
+                )
+            except Exception:
+                pass
             return render_template(
                 "principal/login.html",
                 mensaje="Registro exitoso. Ahora inicia sesión.",
@@ -121,34 +135,59 @@ class AuthController:
             "principal/registro.html",
             error=error,
             datos=datos,
-            correo_verificado=self._correo_verificado(datos.get("correo", ""))
+            correo_verificado=self._correo_verificado(
+                datos.get("correo", ""),
+                "registro"
+            )
         )
 
-    def _correo_verificado(self, correo):
+    def _correo_verificado(self, correo, proposito="registro"):
         registro = session.get("correo_verificado")
 
         return bool(
             registro
             and registro.get("correo") == str(correo).strip().lower()
+            and registro.get("proposito", "registro") == proposito
             and time.time() <= registro.get("expira", 0)
         )
 
     def enviar_codigo_correo(self):
         datos = request.get_json(silent=True) or {}
         correo = str(datos.get("correo", "")).strip().lower()
+        proposito = (
+            "perfil" if datos.get("proposito") == "perfil" else "registro"
+        )
         correo_valido = r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
 
         if not re.fullmatch(correo_valido, correo):
             return {"ok": False, "error": "Ingresa un correo válido."}, 400
 
-        usuario_actual = session.get("usuario") or {}
-        correo_actual = str(usuario_actual.get("correo", "")).strip().lower()
+        if self._correo_verificado(correo, proposito):
+            session.pop("verificacion_correo", None)
+            return {
+                "ok": True,
+                "verificado": True,
+                "mensaje": "Este correo ya está verificado."
+            }, 200
 
-        if correo != correo_actual and self.service.correo_registrado(correo):
-            return {"ok": False, "error": "Ya existe una cuenta con ese correo."}, 409
+        usuario_actual = session.get("usuario") or {}
+        correo_actual = (
+            str(usuario_actual.get("correo", "")).strip().lower()
+            if proposito == "perfil" else None
+        )
+
+        if self.service.correo_en_uso(correo, correo_actual):
+            return {
+                "ok": False,
+                "error": "Ya existe una cuenta con ese correo."
+            }, 409
 
         previo = session.get("verificacion_correo") or {}
-        if previo.get("correo") == correo and time.time() - previo.get("enviado", 0) < 60:
+        if (
+            previo.get("correo") == correo
+            and previo.get("proposito") == proposito
+            and time.time() - previo.get("enviado", 0) < 60
+        ):
             return {
                 "ok": True,
                 "mensaje": "Ya enviamos un código. Revisa tu correo."
@@ -159,6 +198,7 @@ class AuthController:
         session.pop("correo_verificado", None)
         session["verificacion_correo"] = {
             "correo": correo,
+            "proposito": proposito,
             "codigo": codigo,
             "enviado": time.time(),
             "expira": time.time() + 600,
@@ -198,11 +238,17 @@ class AuthController:
 
         session["correo_verificado"] = {
             "correo": registro.get("correo"),
+            "proposito": registro.get("proposito", "registro"),
             "expira": time.time() + 1800
         }
         session.pop("verificacion_correo", None)
 
-        return {"ok": True, "mensaje": "Correo verificado correctamente."}, 200
+        return {
+            "ok": True,
+            "verificado": True,
+            "correo": registro.get("correo"),
+            "mensaje": "Correo verificado correctamente."
+        }, 200
 
 
 
@@ -401,6 +447,8 @@ class AuthController:
             "acepta_politica_no_reembolso": bool(getattr(usuario, "acepta_politica_no_reembolso", True))
         }
 
+        session.pop("encuesta_descartada", None)
+
         if session["usuario"]["rol"] == "cliente":
             id_cliente = session["usuario"]["id"]
             favoritos_invitado = self._ids_favoritos_invitado()
@@ -598,6 +646,8 @@ class AuthController:
             ))
         }
 
+        session.pop("encuesta_descartada", None)
+
         if session["usuario"]["rol"] == "cliente":
 
             session["favoritos"] = (
@@ -670,6 +720,13 @@ class AuthController:
             session["reserva_pendiente_url"] = next_url
         perfil = self._registro_google_pendiente()
         datos = dict(perfil or {})
+        verificado = session.get("correo_verificado") or {}
+        if (
+            not perfil
+            and verificado.get("correo")
+            and verificado.get("proposito", "registro") == "registro"
+        ):
+            datos["correo"] = verificado["correo"]
         if request.method == "POST":
             for campo in ("nombre", "apellido", "tipo", "numero", "telefono", "codigo"):
                 datos[campo] = request.form.get(campo, "")
@@ -678,7 +735,10 @@ class AuthController:
         return render_template(
             "principal/registro.html", error=error,
             google_registro=perfil, datos=datos,
-            correo_verificado=self._correo_verificado(datos.get("correo", "")),
+            correo_verificado=self._correo_verificado(
+                datos.get("correo", ""),
+                "registro"
+            ),
             next=session.get("reserva_pendiente_url", "")
         )
 

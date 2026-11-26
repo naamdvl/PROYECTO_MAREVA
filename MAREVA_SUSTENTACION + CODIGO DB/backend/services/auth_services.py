@@ -76,6 +76,9 @@ class AuthServices():
     def correo_registrado(self, correo):
         return self.repository.buscar_por_correo(correo) is not None
 
+    def correo_en_uso(self, correo, excluir_correo=None):
+        return self.repository.correo_en_uso(correo, excluir_correo)
+
     def actualizar_correo(self, id_cliente, correo):
         return self.repository.actualizar_correo(id_cliente, correo)
 

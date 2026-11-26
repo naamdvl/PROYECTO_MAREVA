@@ -89,8 +89,6 @@
 
             <section class="booking-card">
                 <div class="booking-card__header">
-                    <span class="booking-step">01</span>
-
                     <div>
                         <span class="eyebrow">PASAJEROS</span>
 
@@ -157,8 +155,6 @@
 
             <section class="booking-card">
                 <div class="booking-card__header">
-                    <span class="booking-step">02</span>
-
                     <div>
                         <span class="eyebrow">FECHAS</span>
 
@@ -221,120 +217,18 @@
 
             <section class="booking-card">
                 <div class="booking-card__header">
-                    <span class="booking-step">03</span>
-
                     <div>
-                        <span class="eyebrow">PERSONALIZACIÓN</span>
+                        <span class="eyebrow">OPCIONALES</span>
 
-                        <h2>Arma el viaje a tu medida</h2>
+                        <h2>Experiencias adicionales</h2>
 
                         <p>
-                            Si el paquete lo permite, puedes indicar qué
-                            componentes prefieres y agregar experiencias.
+                            Elige solo los servicios que quieras incluir.
                         </p>
                     </div>
                 </div>
 
-                <input type="hidden"
-                       name="plan"
-                       id="planInput"
-                       value="completo">
-
-                {% if paquete.personalizable %}
-
-                    <div class="customizer-grid">
-                        {% for key, label, icon in [
-                            ('alojamiento', 'Alojamiento', '🏨'),
-                            ('transporte', 'Transporte', '🚐'),
-                            ('alimentacion', 'Alimentación', '🍽️'),
-                            ('guia', 'Guía turístico', '🧭'),
-                            ('seguro', 'Seguro de viaje', '🛡️')
-                        ] %}
-
-                            <label class="custom-option">
-                                <input type="checkbox"
-                                       name="personalizado"
-                                       value="{{ key }}"
-                                       checked>
-
-                                <span class="custom-option__icon">
-                                    {{ icon }}
-                                </span>
-
-                                <span>
-                                    <strong>{{ label }}</strong>
-
-                                    <small>
-                                        Quiero incluirlo en mi propuesta
-                                    </small>
-                                </span>
-
-                                <b>✓</b>
-                            </label>
-
-                        {% endfor %}
-                    </div>
-
-                    <div class="grid-2 custom-bottom">
-                        <div class="form-group">
-                            <label class="form-label">
-                                Presupuesto objetivo (opcional)
-                            </label>
-
-                            <input class="form-input"
-                                   type="number"
-                                   name="presupuesto_personalizado"
-                                   min="0"
-                                   step="50000"
-                                   placeholder="Ej. 2500000">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">
-                                Nivel de flexibilidad
-                            </label>
-
-                            <select class="form-select"
-                                    name="flexibilidad">
-                                <option value="estandar">
-                                    Estándar
-                                </option>
-
-                                <option value="alta">
-                                    Alta — priorizar alternativas
-                                </option>
-
-                                <option value="premium">
-                                    Premium — priorizar comodidad
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-
-                {% else %}
-
-                    <div class="custom-static">
-                        <span>✓</span>
-
-                        <div>
-                            <strong>Paquete preconfigurado</strong>
-
-                            <p>
-                                Este paquete tiene una composición fija.
-                                Puedes agregar servicios extra y dejar
-                                solicitudes especiales.
-                            </p>
-                        </div>
-                    </div>
-
-                {% endif %}
-
                 {% if paquete.servicios_extra %}
-
-                    <div class="extras-heading">
-                        <span>EXPERIENCIAS OPCIONALES</span>
-                        <small>Se añaden a tu solicitud</small>
-                    </div>
 
                     <div class="extras-grid">
                         {% for s in paquete.servicios_extra %}
@@ -365,17 +259,10 @@
 
             <section class="booking-card">
                 <div class="booking-card__header">
-                    <span class="booking-step">04</span>
-
                     <div>
                         <span class="eyebrow">DETALLES FINALES</span>
 
                         <h2>Déjanos tus indicaciones</h2>
-
-                        <p>
-                            Esta información ayuda al equipo a preparar
-                            una experiencia más clara y personalizada.
-                        </p>
                     </div>
                 </div>
 
@@ -395,8 +282,6 @@
                 <div class="booking-checkout">
 
                     <span class="eyebrow">RESUMEN</span>
-
-                    <h2>Tu reserva</h2>
 
                     <div class="checkout-package">
                         <strong>{{ paquete.nombre }}</strong>

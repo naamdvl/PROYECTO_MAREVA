@@ -21,6 +21,8 @@ COLUMNAS_PAQUETE = [
     "nombre_destino",
     "departamento",
     "emoji",
+    "calificacion_promedio",
+    "total_resenas",
 ]
 
 
@@ -44,10 +46,20 @@ QUERY_BASE = """
         d.categoria AS categoria,
         d.nombre_destino,
         d.departamento,
-        p.emoji
+        p.emoji,
+        ROUND(COALESCE(rv.promedio, 0)::numeric, 1) AS calificacion_promedio,
+        COALESCE(rv.total, 0) AS total_resenas
     FROM paquete_turistico p
     JOIN destino d
         ON p.id_destino = d.id_destino
+    LEFT JOIN LATERAL (
+        SELECT
+            AVG(rp.calificacion::numeric) AS promedio,
+            COUNT(*) AS total
+        FROM resena_paquete rp
+        WHERE rp.id_paquete = p.id_paquete
+          AND rp.estado = 'visible'
+    ) rv ON TRUE
 """
 
 

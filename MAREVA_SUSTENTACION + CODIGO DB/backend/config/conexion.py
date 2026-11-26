@@ -9,6 +9,36 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+class _CursorProxy:
+    def __init__(self, cursor, conexion):
+        self._cursor = cursor
+        self._conexion = conexion
+
+    def __getattr__(self, nombre):
+        return getattr(self._cursor, nombre)
+
+    def __enter__(self):
+        self._cursor.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        if self._cursor.closed:
+            return False
+        resultado = self._cursor.__exit__(exc_type, exc, tb)
+        if exc_type is None:
+            self._conexion.commit()
+        else:
+            self._conexion.rollback()
+        return resultado
+
+    def close(self):
+        if not self._cursor.closed:
+            try:
+                self._conexion.commit()
+            finally:
+                self._cursor.close()
+
+
 class Conexion:
     """
     Envuelve una conexión de PostgreSQL y la abre solo cuando se usa.
@@ -40,13 +70,15 @@ class Conexion:
         return self._conexion
 
     def cursor(self, *args, **kwargs):
-        return self._obtener().cursor(*args, **kwargs)
+        return _CursorProxy(self._obtener().cursor(*args, **kwargs), self)
 
     def commit(self):
-        self._obtener().commit()
+        if self._conexion is not None and not self._conexion.closed:
+            self._conexion.commit()
 
     def rollback(self):
-        self._obtener().rollback()
+        if self._conexion is not None and not self._conexion.closed:
+            self._conexion.rollback()
 
     def close(self):
         if self._conexion is not None and not self._conexion.closed:

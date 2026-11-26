@@ -236,3 +236,45 @@ class ProveedorController:
             )
         )
 
+    def listar_reservas(self):
+        proveedor_id = self._obtener_proveedor_actual()
+
+        if not proveedor_id:
+            return redirect(url_for("auth.mostrar_login"))
+
+        reservas = self.service.listar_reservas(proveedor_id)
+
+        return render_template(
+            "proveedor/reservas.html",
+            reservas=reservas
+        )
+
+    def completar_reserva(self, id_reserva):
+        proveedor_id = self._obtener_proveedor_actual()
+
+        if not proveedor_id:
+            return redirect(url_for("auth.mostrar_login"))
+
+        resultado = self.service.completar_reserva(
+            id_reserva,
+            proveedor_id
+        )
+
+        if resultado.get("ok"):
+            mensaje = "Reserva completada y encuesta enviada."
+            if not resultado.get("encuesta_enviada"):
+                mensaje = (
+                    "Reserva completada, pero no se pudo enviar la encuesta."
+                )
+            categoria = "success"
+        else:
+            mensaje = resultado.get(
+                "error",
+                "No fue posible completar la reserva."
+            )
+            categoria = "error"
+
+        flash(mensaje, categoria)
+
+        return redirect(url_for("proveedor.reservas"))
+

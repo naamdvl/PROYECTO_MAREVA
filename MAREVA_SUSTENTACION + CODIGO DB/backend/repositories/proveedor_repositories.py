@@ -1,3 +1,5 @@
+from datetime import date
+
 from config.conexion import Conexion
 from werkzeug.security import generate_password_hash
 from psycopg.errors import UniqueViolation
@@ -418,5 +420,143 @@ class ProveedorRepository:
             return {
                 "ok": False,
                 "error": "No fue posible realizar la firma electrónica."
+            }
+
+    def obtener_reservas_por_proveedor(self, proveedor_id):
+        cursor = self.conexion.cursor()
+
+        try:
+            cursor.execute(
+                """
+                SELECT
+                    r.id_reserva,
+                    r.codigo_unico,
+                    r.estado,
+                    r.fecha_viaje,
+                    COALESCE(it.fecha_regreso, r.fecha_viaje) AS fecha_fin,
+                    r.encuesta_enviada,
+                    p.nombre AS paquete,
+                    cl.nombre,
+                    cl.apellido
+                FROM reserva r
+                JOIN paquete_turistico p ON p.id_paquete = r.id_paquete
+                JOIN cliente cl ON cl.id_cliente = r.id_cliente
+                LEFT JOIN LATERAL (
+                    SELECT MIN(fecha_regreso) AS fecha_regreso
+                    FROM itinerario_viaje
+                    WHERE id_reserva = r.id_reserva
+                ) it ON TRUE
+                WHERE EXISTS (
+                    SELECT 1 FROM contrato c
+                    WHERE c.id_paquete = r.id_paquete
+                      AND c.id_proveedor = %s
+                )
+                ORDER BY r.fecha_viaje DESC NULLS LAST, r.id_reserva DESC
+                """,
+                (proveedor_id,),
+            )
+
+            columnas = [descripcion[0] for descripcion in cursor.description]
+            reservas = []
+
+            for fila in cursor.fetchall():
+                reserva = dict(zip(columnas, fila))
+                fin = reserva["fecha_fin"] or reserva["fecha_viaje"]
+                reserva["fecha_fin"] = fin
+                reserva["puede_completar"] = bool(
+                    fin
+                    and fin <= date.today()
+                    and (
+                        reserva["estado"]
+                        in ("pagada", "en_proceso", "confirmada")
+                        or (
+                            reserva["estado"] == "completada"
+                            and not reserva["encuesta_enviada"]
+                        )
+                    )
+                )
+                reservas.append(reserva)
+
+            cursor.close()
+            self.conexion.rollback()
+            return reservas
+
+        except Exception:
+            self.conexion.rollback()
+            cursor.close()
+            return []
+
+    def marcar_completada(self, id_reserva, proveedor_id):
+        cursor = self.conexion.cursor()
+
+        try:
+            cursor.execute(
+                """
+                UPDATE reserva r
+                SET
+                    estado = 'completada',
+                    encuesta_enviada = TRUE,
+                    encuesta_enviada_fecha = NOW()
+                WHERE r.id_reserva = %s
+                  AND EXISTS (
+                      SELECT 1 FROM contrato c
+                      WHERE c.id_paquete = r.id_paquete
+                        AND c.id_proveedor = %s
+                  )
+                  AND (
+                      r.estado IN ('pagada', 'en_proceso', 'confirmada')
+                      OR (r.estado = 'completada' AND NOT r.encuesta_enviada)
+                  )
+                  AND COALESCE(
+                      (SELECT MIN(it.fecha_regreso)
+                       FROM itinerario_viaje it
+                       WHERE it.id_reserva = r.id_reserva),
+                      r.fecha_viaje
+                  ) <= CURRENT_DATE
+                RETURNING
+                    r.id_reserva,
+                    (SELECT correo FROM cliente
+                     WHERE id_cliente = r.id_cliente),
+                    (SELECT nombre FROM cliente
+                     WHERE id_cliente = r.id_cliente),
+                    (SELECT nombre FROM paquete_turistico
+                     WHERE id_paquete = r.id_paquete),
+                    (SELECT slug FROM paquete_turistico
+                     WHERE id_paquete = r.id_paquete)
+                """,
+                (id_reserva, proveedor_id),
+            )
+
+            fila = cursor.fetchone()
+
+            if not fila:
+                self.conexion.rollback()
+                cursor.close()
+                return {
+                    "ok": False,
+                    "error": (
+                        "La reserva no está lista para completarse. "
+                        "Solo puedes completarla después de la fecha de regreso."
+                    ),
+                }
+
+            self.conexion.commit()
+            cursor.close()
+
+            return {
+                "ok": True,
+                "id_reserva": fila[0],
+                "correo": fila[1],
+                "nombre": fila[2],
+                "paquete": fila[3],
+                "slug": fila[4],
+            }
+
+        except Exception:
+            self.conexion.rollback()
+            cursor.close()
+            return {
+                "ok": False,
+                "error": "No fue posible completar la reserva."
             }
 

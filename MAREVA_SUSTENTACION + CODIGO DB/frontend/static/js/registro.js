@@ -119,6 +119,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const enviarCodigoBtn = obtenerCampo("enviarCodigoBtn");
     const verificarCodigoBtn = obtenerCampo("verificarCodigoBtn");
     const codigoVerificacion = obtenerCampo("codigoVerificacion");
+    const reenviarBtn = obtenerCampo("reenviarConfirmacionBtn");
+    let temporizadorReenvio = null;
     let correoVerificadoValor = correo?.value.trim() || "";
 
     const correoValido = (valor) =>
@@ -228,31 +230,77 @@ document.addEventListener("DOMContentLoaded", () => {
         if (tipo) estadoVerificacion.classList.add("es-" + tipo);
     }
 
+    function detenerContador() {
+        if (temporizadorReenvio) {
+            clearInterval(temporizadorReenvio);
+            temporizadorReenvio = null;
+        }
+    }
+
+    function restablecerVerificacion(mensaje) {
+        detenerContador();
+        if (marcaVerificado) marcaVerificado.value = "0";
+        if (bloqueVerificacion) {
+            bloqueVerificacion.dataset.estado = "pendiente";
+            bloqueVerificacion.classList.remove("verificacion-correo--ok");
+        }
+        if (codigoVerificacion) {
+            codigoVerificacion.hidden = false;
+            codigoVerificacion.disabled = false;
+            codigoVerificacion.value = "";
+        }
+        if (enviarCodigoBtn) {
+            enviarCodigoBtn.hidden = false;
+            enviarCodigoBtn.disabled = false;
+            enviarCodigoBtn.textContent = "Enviar código";
+        }
+        if (verificarCodigoBtn) {
+            verificarCodigoBtn.hidden = false;
+            verificarCodigoBtn.disabled = true;
+        }
+        if (reenviarBtn) reenviarBtn.hidden = true;
+        establecerEstado(mensaje || "Ingresa un correo válido para verificarlo.", "error");
+    }
+
+    function aplicarEstadoVerificado(mensaje, actualizarMensaje = true) {
+        detenerContador();
+        if (marcaVerificado) marcaVerificado.value = "1";
+        if (bloqueVerificacion) {
+            bloqueVerificacion.dataset.estado = "verificado";
+            bloqueVerificacion.classList.add("verificacion-correo--ok");
+        }
+        if (enviarCodigoBtn) enviarCodigoBtn.hidden = true;
+        if (codigoVerificacion) codigoVerificacion.hidden = true;
+        if (verificarCodigoBtn) verificarCodigoBtn.hidden = true;
+        if (reenviarBtn) reenviarBtn.hidden = false;
+        if (actualizarMensaje) {
+            establecerEstado(mensaje || "Tu correo quedó verificado. Puedes continuar.", "ok");
+        }
+    }
+
     function actualizarVerificacion() {
         if (esGoogle || !bloqueVerificacion || !correo) return;
 
         const valido = validarCampo("correo", false);
         bloqueVerificacion.style.display = valido ? "flex" : "none";
 
-        if (!valido) {
-            if (marcaVerificado) marcaVerificado.value = "0";
-            if (codigoVerificacion) codigoVerificacion.value = "";
-            if (verificarCodigoBtn) verificarCodigoBtn.disabled = true;
-            establecerEstado("Ingresa un correo válido para verificarlo.", "error");
+        if (!valido && bloqueVerificacion.dataset.estado !== "verificado") {
+            restablecerVerificacion("Ingresa un correo válido para verificarlo.");
         }
     }
 
     function iniciarContador() {
         if (!enviarCodigoBtn || esGoogle) return;
 
+        detenerContador();
         let segundos = 60;
         enviarCodigoBtn.disabled = true;
         enviarCodigoBtn.textContent = `Reenviar en ${segundos}s`;
 
-        const intervalo = setInterval(() => {
+        temporizadorReenvio = setInterval(() => {
             segundos -= 1;
             if (segundos <= 0) {
-                clearInterval(intervalo);
+                detenerContador();
                 enviarCodigoBtn.disabled = false;
                 enviarCodigoBtn.textContent = "Enviar código";
                 return;
@@ -267,7 +315,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        if (marcaVerificado) marcaVerificado.value = "0";
+        detenerContador();
         if (enviarCodigoBtn) {
             enviarCodigoBtn.disabled = true;
             enviarCodigoBtn.textContent = "Enviando...";
@@ -287,6 +335,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     enviarCodigoBtn.disabled = false;
                     enviarCodigoBtn.textContent = "Enviar código";
                 }
+                return;
+            }
+
+            if (datos.verificado) {
+                aplicarEstadoVerificado(datos.mensaje);
                 return;
             }
 
@@ -327,11 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            if (marcaVerificado) marcaVerificado.value = "1";
-            establecerEstado("✓ Correo verificado correctamente.", "ok");
-            if (verificarCodigoBtn) verificarCodigoBtn.disabled = true;
-            if (enviarCodigoBtn) enviarCodigoBtn.disabled = true;
-            if (codigoVerificacion) codigoVerificacion.disabled = true;
+            aplicarEstadoVerificado(datos.mensaje || "Correo verificado correctamente.");
         } catch (error) {
             establecerEstado("No fue posible conectar con el servidor.", "error");
             if (verificarCodigoBtn) verificarCodigoBtn.disabled = false;
@@ -354,8 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     marcaVerificado.value === "1" &&
                     correoActual !== correoVerificadoValor
                 ) {
-                    marcaVerificado.value = "0";
-                    establecerEstado("El correo cambió; vuelve a verificarlo.", "error");
+                    restablecerVerificacion("El correo cambió; vuelve a verificarlo.");
                 }
 
                 correoVerificadoValor = correoActual;
@@ -380,11 +428,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (enviarCodigoBtn) enviarCodigoBtn.addEventListener("click", enviarCodigo);
     if (verificarCodigoBtn) verificarCodigoBtn.addEventListener("click", verificarCodigo);
+    if (reenviarBtn) reenviarBtn.addEventListener("click", enviarCodigo);
 
     if (!esGoogle && marcaVerificado && marcaVerificado.value === "1") {
-        if (verificarCodigoBtn) verificarCodigoBtn.disabled = true;
-        if (enviarCodigoBtn) enviarCodigoBtn.disabled = true;
-        if (codigoVerificacion) codigoVerificacion.disabled = true;
+        aplicarEstadoVerificado("Tu correo quedó verificado. Puedes continuar.", false);
     }
 
     actualizarTelefonoCompleto();

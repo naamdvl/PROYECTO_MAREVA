@@ -1,4 +1,4 @@
-from flask import render_template, flash , session, request, redirect, url_for
+from flask import render_template, flash , session, request, redirect, url_for, jsonify
 
 from services.encuesta_services import EncuestaService
 
@@ -34,6 +34,16 @@ class EncuestaController:
             preguntas=resultado["preguntas"],
             error=None
         )
+
+    def descartar_encuesta(self, id_reserva):
+        usuario = session.get("usuario")
+
+        if not usuario:
+            return jsonify({"ok": False}), 401
+
+        session["encuesta_descartada"] = int(id_reserva)
+        session.modified = True
+        return jsonify({"ok": True})
 
     def guardar_encuesta_cliente(self, id_reserva):
         usuario = session.get("usuario")
@@ -100,6 +110,24 @@ class EncuestaController:
         flash("¡Gracias! Tu encuesta fue guardada.", "success")
 
         return redirect(url_for("home.perfil"))
+
+    def guardar_encuesta_rapida(self, id_reserva):
+        usuario = session.get("usuario") or {}
+
+        if not usuario or usuario.get("rol") != "cliente":
+            return jsonify({"ok": False, "error": "Inicia sesión para responder."}), 401
+
+        id_cliente = usuario.get("id") or usuario.get("id_cliente")
+        datos = request.get_json(silent=True) or {}
+
+        resultado = self.service.guardar_encuesta_rapida(
+            id_reserva,
+            id_cliente,
+            datos,
+        )
+
+        codigo = 200 if resultado.get("ok") else 400
+        return jsonify(resultado), codigo
 
     def panel_preguntas(self):
 

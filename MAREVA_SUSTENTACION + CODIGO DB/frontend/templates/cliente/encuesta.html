@@ -262,13 +262,14 @@
             <div class="survey-icon">💬</div>
             <span class="eyebrow">MAREVA · TU OPINIÓN</span>
             <h1>¿Cómo fue tu viaje?</h1>
-            <p>Ayúdanos a mejorar las experiencias de MAREVA.</p>
+            <p>Responde solo lo que quieras; cada comentario nos ayuda a mejorar.</p>
         </div>
 
         {% if error %}
             <div class="alert alert-error">{{ error }}</div>
         {% endif %}
 
+        {% if reserva %}
         <form method="POST" action="{{ url_for('encuesta.guardar_encuesta_cliente', id_reserva=reserva.id_reserva) }}" class="survey-card">
             <input type="hidden" name="id_reserva" value="{{ reserva.id_reserva|default('') }}">
 
@@ -285,8 +286,7 @@
                     <label>
                         <input type="radio"
                                name="respuesta_{{ pregunta.id_pregunta }}"
-                               value="{{ n }}"
-                               required>
+                               value="{{ n }}">
                         <span>{{ n }}</span>
                     </label>
                     {% endfor %}
@@ -296,13 +296,15 @@
                           name="respuesta_{{ pregunta.id_pregunta }}"
                           rows="4"
                           placeholder="Escribe tu respuesta..."
-                          required></textarea>
+                           ></textarea>
+
                 {% else %}
                 <textarea class="form-input"
                           name="respuesta_{{ pregunta.id_pregunta }}"
                           rows="3"
                           placeholder="Tu respuesta..."
-                          required></textarea>
+                           ></textarea>
+
                 {% endif %}
             </div>
             {% endfor %}
@@ -311,6 +313,12 @@
                 Enviar encuesta →
             </button>
         </form>
+        {% else %}
+        <div class="survey-card">
+            <p class="muted">Puedes volver a tu perfil para revisar tus reservas.</p>
+            <a class="btn btn-primary" href="{{ url_for('home.perfil') }}">Volver a mi perfil</a>
+        </div>
+        {% endif %}
     </div>
 </section>
 

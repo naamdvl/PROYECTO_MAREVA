@@ -155,6 +155,7 @@ def actualizar_correo(self):
 
         if (
             verificado.get("correo") != correo
+            or verificado.get("proposito", "registro") != "perfil"
             or time.time() > verificado.get("expira", 0)
         ):
             flash(

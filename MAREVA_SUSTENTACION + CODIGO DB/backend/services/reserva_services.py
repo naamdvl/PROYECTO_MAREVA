@@ -1,3 +1,5 @@
+from datetime import date
+
 from repositories.reserva_repository import ReservaRepository
 from services.encuesta_services import EncuestaService
 
@@ -194,11 +196,35 @@ class ReservaService:
             }
 
 
-        if reserva["estado"] == "completada":
+        if (
+            reserva["estado"] == "completada"
+            and reserva.get("encuesta_enviada")
+        ):
 
             return {
                 "ok": False,
                 "error": "La reserva ya está completada."
+            }
+
+        fecha_fin = reserva.get("fecha_fin")
+
+        if fecha_fin and fecha_fin > date.today():
+
+            return {
+                "ok": False,
+                "error": (
+                    "La reserva solo puede completarse después de la "
+                    "fecha de regreso del viaje."
+                )
+            }
+
+        if not fecha_fin:
+            return {
+                "ok": False,
+                "error": (
+                    "La reserva no tiene una fecha de viaje válida "
+                    "para completarse."
+                )
             }
 
 
@@ -217,7 +243,9 @@ class ReservaService:
 
             reserva["nombre"],
 
-            id_reserva
+            id_reserva,
+
+            reserva.get("paquete")
 
         )
 
@@ -234,6 +262,28 @@ class ReservaService:
             "ok": True,
             "encuesta_enviada": envio["ok"]
         }
+
+    def finalizar_viajes_pasados(self):
+        reservas = self.repo.obtener_reservas_para_finalizar()
+        finalizadas = 0
+        encuestas = 0
+
+        for reserva in reservas:
+            if self.repo.finalizar_automaticamente(reserva["id_reserva"]):
+                finalizadas += 1
+
+            envio = self.encuesta_service.enviar_encuesta(
+                reserva["correo"],
+                reserva["nombre"],
+                reserva["id_reserva"],
+                reserva["paquete"],
+            )
+
+            if envio.get("ok"):
+                self.repo.marcar_encuesta_enviada(reserva["id_reserva"])
+                encuestas += 1
+
+        return {"finalizadas": finalizadas, "encuestas": encuestas}
 
     def listar_reservas_cliente(self, id_cliente):
         return self.repo.listar_reservas_cliente(id_cliente)

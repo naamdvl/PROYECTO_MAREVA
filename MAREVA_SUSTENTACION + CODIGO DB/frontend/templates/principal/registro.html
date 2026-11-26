@@ -93,14 +93,22 @@
         <small class="form-error" id="error-correo" aria-live="polite"></small>
 
         {% if not google_registro %}
-          <div class="verificacion-correo" id="verificacionCorreo" {% if not correo_verificado %}style="display:none;"{% endif %}>
-            <button type="button" class="btn btn-outline" id="enviarCodigoBtn">Enviar código</button>
-            <input type="text" id="codigoVerificacion" class="form-input" inputmode="numeric" maxlength="6" placeholder="Código de 6 dígitos" autocomplete="one-time-code" aria-label="Código de verificación">
-            <button type="button" class="btn btn-primary" id="verificarCodigoBtn">Verificar</button>
-            <small class="verificacion-correo__estado" id="estadoVerificacion" role="status" aria-live="polite">
-              {% if correo_verificado %}✓ Correo verificado{% endif %}
-            </small>
-            <input type="hidden" id="correoVerificado" value="{{ '1' if correo_verificado else '0' }}">
+          <input type="hidden" id="correoVerificado" value="{{ '1' if correo_verificado else '0' }}">
+
+          <div class="verificacion-correo {% if correo_verificado %}verificacion-correo--ok{% endif %}"
+               id="verificacionCorreo"
+               data-estado="{{ 'verificado' if correo_verificado else 'pendiente' }}"
+               {% if not correo_verificado and not (datos|default({})).get('correo') %}style="display:none;"{% endif %}>
+            {% if correo_verificado %}
+              <span class="verificacion-correo__badge">Correo verificado</span>
+              <button type="button" class="btn btn-link" id="reenviarConfirmacionBtn">Reenviar confirmación</button>
+              <small class="verificacion-correo__estado es-ok" id="estadoVerificacion" role="status" aria-live="polite">Tu correo quedó verificado. Puedes continuar.</small>
+            {% else %}
+              <button type="button" class="btn btn-outline" id="enviarCodigoBtn">Enviar código</button>
+              <input type="text" id="codigoVerificacion" class="form-input" inputmode="numeric" maxlength="6" placeholder="Código de 6 dígitos" autocomplete="one-time-code" aria-label="Código de verificación">
+              <button type="button" class="btn btn-primary" id="verificarCodigoBtn">Verificar</button>
+              <small class="verificacion-correo__estado" id="estadoVerificacion" role="status" aria-live="polite"></small>
+            {% endif %}
           </div>
         {% endif %}
       </div>
@@ -110,7 +118,7 @@
           <div class="form-group">
             <label class="form-label" for="registroPassword">Contraseña *</label>
             <div class="form-input-wrap">
-              <input type="password" id="registroPassword" name="password" class="form-input" placeholder="Mín. 8 caracteres" autocomplete="new-password" required>
+              <input type="password" id="registroPassword" name="password" class="form-input form-input--icon-right" placeholder="Mín. 8 caracteres" autocomplete="new-password" required>
               <button type="button" class="form-toggle-pass" onclick="togglePassword('registroPassword', this)" aria-label="Mostrar u ocultar contraseña">👁</button>
             </div>
             <small class="form-error" id="error-registroPassword" aria-live="polite"></small>
@@ -118,7 +126,7 @@
           <div class="form-group">
             <label class="form-label" for="confirmPassword">Confirmar contraseña *</label>
             <div class="form-input-wrap">
-              <input type="password" id="confirmPassword" name="confirm_password" class="form-input" autocomplete="new-password" required>
+              <input type="password" id="confirmPassword" name="confirm_password" class="form-input form-input--icon-right" autocomplete="new-password" required>
               <button type="button" class="form-toggle-pass" onclick="togglePassword('confirmPassword', this)" aria-label="Mostrar u ocultar confirmación de contraseña">👁</button>
             </div>
             <small class="form-error" id="error-confirmPassword" aria-live="polite"></small>

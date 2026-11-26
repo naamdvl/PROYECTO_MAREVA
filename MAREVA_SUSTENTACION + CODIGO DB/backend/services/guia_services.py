@@ -1,4 +1,5 @@
 from repositories.guia_repository import GuiaRepository
+from services.encuesta_services import EncuestaService
 
 TRANSICIONES_RESERVA = {
         "solicitada": {"confirmada", "cancelada"},
@@ -17,6 +18,7 @@ class GuiaService:
 
     def __init__(self):
         self.repository = GuiaRepository()
+        self.encuesta_service = EncuestaService()
 
     def obtener_panel(self, id_guia, estado=None):
         estados_validos = set(self.TRANSICIONES_RESERVA)
@@ -48,6 +50,37 @@ class GuiaService:
                     f"a {nuevo_estado}."
                 ),
             }
+        if nuevo_estado == "completada":
+            datos = self.repository.completar_reserva(
+                id_guia,
+                id_reserva
+            )
+
+            if not datos:
+                return {
+                    "ok": False,
+                    "error": (
+                        "La reserva solo puede completarse después "
+                        "de la fecha de regreso del viaje."
+                    ),
+                }
+
+            envio = self.encuesta_service.enviar_encuesta(
+                datos["correo"],
+                datos["nombre"],
+                datos["id_reserva"],
+                datos["paquete"],
+            )
+
+            return {
+                "ok": True,
+                "error": (
+                    None
+                    if envio.get("ok")
+                    else "Reserva completada, pero no se pudo enviar la encuesta."
+                ),
+            }
+
         actualizado = self.repository.actualizar_estado_reserva(
             id_guia, id_reserva, nuevo_estado
         )

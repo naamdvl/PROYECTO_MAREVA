@@ -16,7 +16,11 @@ from routes.dashboard_routes import dashboard_bp
 from datetime import timedelta
 
 import os
+import time
 from dotenv import load_dotenv
+
+from services.resena_services import ResenaService
+from services.reserva_services import ReservaService
 
 load_dotenv()
 
@@ -90,6 +94,51 @@ ENDPOINTS_ADMIN = {
 }
 
 
+@main.context_processor
+def encuesta_pendiente_contexto():
+    usuario = session.get("usuario") or {}
+
+    if usuario.get("rol") != "cliente":
+        return {"encuesta_pendiente": None}
+
+    try:
+        encuesta = ResenaService().obtener_encuesta_pendiente(usuario["id"])
+    except Exception as error:
+        print("ERROR CARGANDO ENCUESTA PENDIENTE:", error)
+        encuesta = None
+
+    if encuesta and session.get("encuesta_descartada") == encuesta["id_reserva"]:
+        encuesta = None
+
+    return {"encuesta_pendiente": encuesta}
+
+
+ULTIMA_FINALIZACION = 0.0
+INTERVALO_FINALIZACION = 300
+
+
+@main.before_request
+def finalizar_viajes_automaticamente():
+    global ULTIMA_FINALIZACION
+
+    if request.endpoint == "static":
+        return None
+
+    ahora = time.monotonic()
+
+    if ahora - ULTIMA_FINALIZACION < INTERVALO_FINALIZACION:
+        return None
+
+    ULTIMA_FINALIZACION = ahora
+
+    try:
+        ReservaService().finalizar_viajes_pasados()
+    except Exception as error:
+        print("ERROR FINALIZANDO VIAJES AUTOMÁTICAMENTE:", error)
+
+    return None
+
+
 @main.before_request
 def solo_administrar():
     """Bloquea a los administradores de los flujos de compra/cliente."""
@@ -106,4 +155,4 @@ def solo_administrar():
     return redirect(url_for("dashboard.mostrar_panel"))
 
 if __name__ == "__main__":
-    main.run(debug=True)
+    main.run(debug=True, use_reloader=False)

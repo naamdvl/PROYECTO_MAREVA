@@ -24,6 +24,11 @@ def listar_catalogo():
 def ver_detalle(slug):
     return controller.ver_detalle(slug)
 
+
+@paquetes_bp.route("/paquetes/<slug>/resena", methods=["POST"])
+def crear_resena(slug):
+    return controller.crear_resena(slug)
+
 #Funciones para el panel de administración de paquetes
 @paquetes_bp.route("/admin/paquetes")
 @requiere_admin

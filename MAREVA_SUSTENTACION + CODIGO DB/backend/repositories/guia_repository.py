@@ -404,3 +404,63 @@ class GuiaRepository:
         finally:
             if cursor:
                 cursor.close()
+
+    def completar_reserva(self, id_guia, id_reserva):
+        cursor = None
+
+        try:
+            self._limpiar_transaccion()
+
+            cursor = self.conexion.cursor()
+
+            cursor.execute("""
+                UPDATE reserva r
+                   SET estado = 'completada',
+                       encuesta_enviada = TRUE,
+                       encuesta_enviada_fecha = NOW()
+                  FROM paquete_turistico p
+                 WHERE r.id_reserva = %s
+                   AND p.id_paquete = r.id_paquete
+                   AND p.id_guia = %s
+                   AND r.estado = 'en_proceso'
+                   AND COALESCE(
+                       (SELECT MIN(it.fecha_regreso)
+                          FROM itinerario_viaje it
+                         WHERE it.id_reserva = r.id_reserva),
+                       r.fecha_viaje
+                   ) <= CURRENT_DATE
+                RETURNING
+                    r.id_reserva,
+                    (SELECT correo FROM cliente
+                      WHERE id_cliente = r.id_cliente),
+                    (SELECT nombre FROM cliente
+                      WHERE id_cliente = r.id_cliente),
+                    (SELECT nombre FROM paquete_turistico
+                      WHERE id_paquete = r.id_paquete)
+            """, (
+                id_reserva,
+                id_guia,
+            ))
+
+            fila = cursor.fetchone()
+
+            if not fila:
+                self.conexion.rollback()
+                return None
+
+            self.conexion.commit()
+
+            return {
+                "id_reserva": fila[0],
+                "correo": fila[1],
+                "nombre": fila[2],
+                "paquete": fila[3],
+            }
+
+        except Exception:
+            self.conexion.rollback()
+            raise
+
+        finally:
+            if cursor:
+                cursor.close()

@@ -1,14 +1,16 @@
 from datetime import date
 
-from flask import render_template,redirect,url_for,request,session
+from flask import render_template,redirect,url_for,request,session,flash
 from services.paquete_services import PaqueteService
 from services.historial_services import HistorialServices
+from services.resena_services import ResenaService
 from repositories.salida_repository import SalidaRepository
 
 class PaqueteController:
     def __init__(self):
         self.service=PaqueteService()
         self.historial_services=HistorialServices()
+        self.resena_service=ResenaService()
         self.salida_repository=SalidaRepository()
 
     def listar_catalogo(self):
@@ -165,12 +167,63 @@ class PaqueteController:
             "hoy": hoy.isoformat(),
         }
 
+        usuario = session.get("usuario")
+        id_cliente = (
+            usuario.get("id")
+            if usuario and usuario.get("rol") == "cliente"
+            else None
+        )
+        resenas = self.resena_service.obtener_por_paquete(paquete["id_paquete"])
+        ya_reseno = bool(
+            id_cliente
+            and self.resena_service.ya_reseno(
+                paquete["id_paquete"],
+                id_cliente
+            )
+        )
+
         return render_template(
             "cliente/detalle_paquete.html",
             paquete=paquete,
             salidas=salidas,
-            calendario=calendario
+            calendario=calendario,
+            resenas=resenas,
+            ya_reseno=ya_reseno,
+            id_cliente=id_cliente
         )
+
+    def crear_resena(self, slug):
+        usuario = session.get("usuario")
+
+        if not usuario or usuario.get("rol") != "cliente":
+            return redirect(url_for("auth.mostrar_login", next=request.path))
+
+        paquete = self.service.obtener_detalle(slug)
+
+        if not paquete:
+            return redirect(url_for("paquetes.listar_catalogo"))
+
+        id_cliente = usuario.get("id")
+
+        if self.resena_service.ya_reseno(paquete["id_paquete"], id_cliente):
+            return redirect(url_for("paquetes.ver_detalle", slug=slug))
+
+        resultado = self.resena_service.guardar(
+            paquete["id_paquete"],
+            id_cliente,
+            None,
+            request.form.get("calificacion"),
+            request.form.get("calificacion_servicio") or None,
+            request.form.get("titulo", ""),
+            request.form.get("comentario", ""),
+        )
+
+        if resultado["ok"]:
+            flash("¡Gracias! Tu opinión ya está publicada.", "success")
+        else:
+            flash(resultado["error"], "error")
+
+        return redirect(url_for("paquetes.ver_detalle", slug=slug))
     
     def panel_admin(self):
         paquetes=self.service.listar_todos_admin()

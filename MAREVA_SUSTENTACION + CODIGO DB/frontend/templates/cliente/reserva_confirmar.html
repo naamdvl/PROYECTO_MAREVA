@@ -9,11 +9,19 @@
         <a href="{{ url_for('paquetes.ver_detalle', slug=paquete.slug) }}" class="booking-back">
             ← Volver al paquete
         </a>
+
+        <span class="confirmar-hero__eyebrow">ÚLTIMO PASO · {{ paquete.nombre|upper }}</span>
         <h1>Confirma tu reserva</h1>
         <p>
-            Revisa tu selección. Puedes quitar o agregar servicios antes de
-            guardar la reserva. Después de guardarla podrás descargar el PDF.
+            Revisa tu selección con calma. Ajusta los servicios y los viajeros
+            antes de guardar; cuando termines podrás descargar tu comprobante PDF.
         </p>
+
+        <div class="confirmar-trust">
+            <span>🔒 Pago directo al proveedor</span>
+            <span>📄 Comprobante PDF inmediato</span>
+            <span>💬 Soporte MAREVA</span>
+        </div>
     </div>
 </section>
 
@@ -505,8 +513,9 @@
 
             <aside>
                 <div class="confirm-checkout">
-                    <span class="eyebrow">RESUMEN</span>
+                    <span class="eyebrow">RESUMEN DE TU VIAJE</span>
                     <h2>{{ paquete.nombre }}</h2>
+                    <p class="confirm-checkout__lead">Todo listo. Revisa el total antes de guardar tu reserva.</p>
 
                     <div class="summary-line">
                         <span>📍 Destino</span>

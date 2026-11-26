@@ -20,6 +20,15 @@ def mostrar_encuesta(id_reserva):
 def guardar_encuesta_cliente(id_reserva):
     return controller.guardar_encuesta_cliente(id_reserva)
 
+
+@encuesta_bp.route("/<int:id_reserva>/rapida", methods=["POST"])
+def guardar_encuesta_rapida(id_reserva):
+    return controller.guardar_encuesta_rapida(id_reserva)
+
+@encuesta_bp.route("/<int:id_reserva>/descartar", methods=["POST"])
+def descartar_encuesta(id_reserva):
+    return controller.descartar_encuesta(id_reserva)
+
 @encuesta_bp.route("/admin/preguntas", methods=["GET"])
 def panel_preguntas():
     return controller.panel_preguntas()

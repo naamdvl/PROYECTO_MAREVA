@@ -106,25 +106,60 @@ class CorreoService:
                 "error": "No está configurado el servicio de correo."
             }
 
-        asunto = "Tu código de verificación MAREVA"
+        asunto = "Confirma tu correo para empezar a viajar con MAREVA"
+        codigo_seguro = html.escape(str(codigo))
         contenido = f"""
-        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;">
-          <h2 style="color:#0f766e;">Verifica tu correo</h2>
-          <p>Recibimos un intento de registro en MAREVA con este correo.</p>
-          <p style="font-size:28px;letter-spacing:6px;font-weight:bold;">
-            {html.escape(str(codigo))}
-          </p>
-          <p>Este código vence en 10 minutos. Si no fuiste tú, ignora este mensaje.</p>
-          <p style="color:#64748b;font-size:12px;">MAREVA · Viaja con propósito</p>
-        </div>
-        """
-        contenido_texto = f"""MAREVA
+<div style="margin:0;padding:32px 14px;background:#f3f6fb;font-family:Arial,Helvetica,sans-serif;color:#1e293b;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 18px 45px rgba(15,23,42,.10);">
+    <tr>
+      <td style="background:linear-gradient(135deg,#1d4ed8,#0f766e);padding:30px 36px;color:#ffffff;">
+        <div style="font-size:22px;font-weight:800;letter-spacing:3px;">MAREVA</div>
+        <div style="font-size:13px;opacity:.85;margin-top:6px;">Viaja con propósito</div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:38px 36px 20px;">
+        <p style="margin:0 0 12px;font-size:15px;color:#475569;">Hola, viajero:</p>
+        <h1 style="margin:0 0 14px;font-size:26px;line-height:1.3;color:#0f172a;">Un último paso antes de despegar</h1>
+        <p style="margin:0 0 22px;font-size:15px;line-height:1.65;color:#475569;">Recibimos un intento de registro en MAREVA con este correo. Usa el código siguiente para confirmar tu cuenta y comenzar a descubrir Colombia.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">
+          <tr>
+            <td style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:18px 30px;text-align:center;">
+              <span style="display:block;font-size:11px;letter-spacing:2px;color:#2563eb;font-weight:700;">TU CÓDIGO DE VERIFICACIÓN</span>
+              <span style="display:block;margin-top:8px;font-size:34px;letter-spacing:10px;font-weight:800;color:#1e3a8a;">{codigo_seguro}</span>
+            </td>
+          </tr>
+        </table>
+        <p style="margin:0 0 8px;font-size:14px;color:#475569;"><strong>¿Cómo continuar?</strong></p>
+        <ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.7;color:#475569;">
+          <li>Copia el código en el formulario de registro.</li>
+          <li>Pulsa <strong>Verificar código</strong>.</li>
+          <li>Completa tus datos y crea tu cuenta.</li>
+        </ol>
+        <p style="margin:22px 0 0;padding:14px 16px;background:#fff7ed;border-left:4px solid #f97316;border-radius:10px;font-size:13px;line-height:1.6;color:#7c2d12;">Este código vence en <strong>10 minutos</strong> y es de uso único. Si no fuiste tú quien solicitó el registro, ignora este mensaje.</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:22px 36px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;font-size:12px;color:#64748b;">MAREVA · Viaja con propósito<br>Tu próxima aventura empieza aquí</td>
+    </tr>
+  </table>
+</div>
+"""
+        contenido_texto = f"""MAREVA · Viaja con propósito
+
+Hola, viajero:
+
+Recibimos un intento de registro en MAREVA con este correo.
 
 Tu código de verificación es: {codigo}
 
-Vence en 10 minutos. Si no fuiste tú, ignora este mensaje.
+Cómo continuar:
+1. Copia el código en el formulario de registro.
+2. Pulsa Verificar código.
+3. Completa tus datos y crea tu cuenta.
 
-MAREVA · Viaja con propósito
+Este código vence en 10 minutos y es de uso único.
+Si no fuiste tú quien solicitó el registro, ignora este mensaje.
 """
         mensaje = self._construir_mensaje(
             config,
@@ -147,6 +182,173 @@ MAREVA · Viaja con propósito
                 "ok": False,
                 "error": f"No fue posible enviar el código ({e})."
             }
+
+    def enviar_confirmacion_cuenta(self, correo_cliente, nombre_cliente):
+        config = self._configuracion()
+
+        if not config:
+            return {
+                "ok": False,
+                "error": "No está configurado el servicio de correo."
+            }
+
+        nombre = html.escape((nombre_cliente or "viajero").strip())
+        asunto = "¡Bienvenido a MAREVA! Tu cuenta está lista"
+        contenido = f"""
+<div style="margin:0;padding:32px 14px;background:#f3f6fb;font-family:Arial,Helvetica,sans-serif;color:#1e293b;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 18px 45px rgba(15,23,42,.10);">
+    <tr>
+      <td style="background:linear-gradient(135deg,#1d4ed8,#0f766e);padding:30px 36px;color:#ffffff;">
+        <div style="font-size:22px;font-weight:800;letter-spacing:3px;">MAREVA</div>
+        <div style="font-size:13px;opacity:.85;margin-top:6px;">Viaja con propósito</div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:38px 36px 30px;">
+        <p style="margin:0 0 12px;font-size:15px;color:#475569;">Hola, {nombre}:</p>
+        <h1 style="margin:0 0 14px;font-size:26px;color:#0f172a;">Tu cuenta ya está lista</h1>
+        <p style="margin:0 0 22px;font-size:15px;line-height:1.65;color:#475569;">Ya puedes explorar destinos, guardar tus favoritos y preparar tu próxima reserva. Nos alegra tenerte a bordo.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr><td style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 22px;font-size:14px;font-weight:700;color:#1d4ed8;">Ya puedes iniciar sesión y empezar a explorar</td></tr>
+        </table>
+        <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#64748b;">Si no creaste esta cuenta, puedes ignorar este mensaje con total seguridad.</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:22px 36px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;font-size:12px;color:#64748b;">MAREVA · Viaja con propósito</td>
+    </tr>
+  </table>
+</div>
+"""
+        contenido_texto = f"""MAREVA · Viaja con propósito
+
+Hola, {nombre}:
+
+Tu cuenta ya está lista. Ya puedes explorar destinos, guardar favoritos y preparar tu próxima reserva.
+
+Si no creaste esta cuenta, puedes ignorar este mensaje.
+"""
+        mensaje = self._construir_mensaje(
+            config,
+            asunto,
+            contenido,
+            contenido_texto,
+            correo_cliente,
+        )
+
+        try:
+            return self._enviar(config, mensaje, [correo_cliente])
+        except Exception as e:
+            return {
+                "ok": False,
+                "error": f"No fue posible enviar el código ({e})."
+            }
+
+    def enviar_encuesta(
+        self,
+        correo_cliente,
+        nombre_cliente,
+        id_reserva,
+        paquete=None,
+    ):
+        config = self._configuracion()
+
+        if not config:
+            return {
+                "ok": False,
+                "error": "No está configurado el servicio de correo."
+            }
+
+        asunto = "Cuéntanos cómo fue tu viaje con MAREVA"
+        nombre = html.escape(str(nombre_cliente or "Viajero"))
+        paquete_texto = html.escape(str(paquete or "tu paquete MAREVA"))
+
+        base_url = os.getenv("APP_URL", "").strip().rstrip("/")
+        enlace = None
+
+        if base_url:
+            enlace = (
+                f"{base_url}/?encuesta="
+                f"{html.escape(str(id_reserva))}"
+            )
+
+        if enlace:
+            accion = f"""
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:#2b0870;border-radius:12px;">
+                  <a href="{enlace}" style="display:inline-block;padding:14px 26px;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;">
+                    Responder encuesta
+                  </a>
+                </td>
+              </tr>
+            </table>
+            """
+        else:
+            accion = """
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:#f3f0ff;border:1px solid #ddd4ff;border-radius:12px;padding:14px 22px;font-size:14px;font-weight:700;color:#2b0870;">
+                  Ingresa a MAREVA y responde la encuesta pendiente
+                </td>
+              </tr>
+            </table>
+            """
+
+        contenido = f"""
+        <div style="background:#f5f7fb;padding:28px 12px;">
+          <div style="max-width:600px;margin:auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 18px 45px rgba(32,48,86,.12);">
+            <div style="background:linear-gradient(135deg,#2b0870,#4b1696 55%,#2d70d6);padding:28px 32px;color:#ffffff;">
+              <p style="margin:0;font-size:12px;letter-spacing:3px;font-weight:800;opacity:.8;">MAREVA · TU OPINIÓN IMPORTA</p>
+              <h1 style="margin:8px 0 4px;font-size:26px;">¿Cómo fue tu experiencia?</h1>
+              <p style="margin:0;opacity:.9;font-size:14px;">Tu reseña ayuda a otros viajeros a elegir con confianza.</p>
+            </div>
+            <div style="padding:28px 32px 32px;color:#243049;font-size:15px;line-height:1.65;">
+              <p>Hola, <strong>{nombre}</strong>:</p>
+              <p>Esperamos que hayas disfrutado <strong>{paquete_texto}</strong>. Ya finalizó tu viaje y nos encantaría conocer tu opinión.</p>
+              <p style="text-align:center;color:#f6a04d;font-size:28px;letter-spacing:6px;margin:22px 0 6px;">★★★★★</p>
+              <p style="text-align:center;color:#7a8698;font-size:13px;margin-top:0;">Califica el paquete y la atención del servicio en menos de un minuto.</p>
+              <div style="margin:26px 0;">{accion}</div>
+              <p style="color:#7a8698;font-size:12px;line-height:1.5;">
+                Referencia: reserva {html.escape(str(id_reserva))}. Si ya respondiste, puedes ignorar este mensaje.
+              </p>
+              <hr style="border:0;border-top:1px solid #e6eaf0;margin:26px 0 18px;">
+              <p style="color:#94a0b3;font-size:12px;margin:0;">MAREVA · Viaja con propósito</p>
+            </div>
+          </div>
+        </div>
+        """
+
+        contenido_texto = f"""Hola, {nombre_cliente or 'Viajero'}:
+
+Ya finalizó tu viaje con MAREVA ({paquete or 'tu paquete'}).
+
+Cuéntanos cómo fue tu experiencia: califica el paquete y la atención del servicio en menos de un minuto.
+
+Referencia: reserva {id_reserva}.
+{'Responde aquí: ' + enlace if enlace else 'Ingresa a MAREVA y responde la encuesta pendiente.'}
+
+Si ya respondiste, puedes ignorar este mensaje.
+
+MAREVA · Viaja con propósito
+"""
+        mensaje = self._construir_mensaje(
+            config,
+            asunto,
+            contenido,
+            contenido_texto,
+            correo_cliente,
+        )
+
+        try:
+            return self._enviar(config, mensaje, [correo_cliente])
+        except Exception as e:
+            print("ERROR ENVIANDO ENCUESTA:", e)
+            return {
+                "ok": False,
+                "error": f"No fue posible enviar la encuesta ({e})."
+            }
+
 
     def enviar_confirmacion_reserva(self, correo_cliente, nombre_cliente, reserva):
         """

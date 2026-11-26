@@ -457,6 +457,16 @@
                                 📍 {{ p.nombre_destino }} · {{ p.departamento }}
                             </span>
 
+                            {% set promedio = p.calificacion_promedio|float|default(0) %}
+                            {% set llenas = promedio|round(0, 'floor')|int %}
+                            <span class="rating-pill rating-pill--card" title="Valoración media de los viajeros">
+                                <span class="rating-pill__stars">
+                                    {% for i in range(1, 6) %}{{ '★' if i <= llenas else '☆' }}{% endfor %}
+                                </span>
+                                <span>{{ '%.1f'|format(promedio) }}</span>
+                                <small>({{ p.total_resenas|default(0) }})</small>
+                            </span>
+
 
                             <h3>
                                 {{ p.nombre }}

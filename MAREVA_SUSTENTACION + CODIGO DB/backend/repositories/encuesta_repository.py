@@ -54,6 +54,31 @@ class EncuestaRepository:
         finally:
             cursor.close()
 
+    def ya_respondida(self, id_reserva):
+        if not id_reserva:
+            return False
+
+        cursor = self.conexion.cursor()
+
+        try:
+            cursor.execute(
+                """
+                SELECT EXISTS (
+                    SELECT 1 FROM encuesta_respuesta
+                    WHERE id_reserva = %s
+                )
+                """,
+                (id_reserva,),
+            )
+            resultado = bool(cursor.fetchone()[0])
+            cursor.close()
+            self.conexion.rollback()
+            return resultado
+        except Exception:
+            self.conexion.rollback()
+            cursor.close()
+            return False
+
     def obtener_preguntas_activas(self):
         cursor = self.conexion.cursor()
 

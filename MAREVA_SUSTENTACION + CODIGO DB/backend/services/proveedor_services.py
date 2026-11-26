@@ -1,12 +1,14 @@
 import re
 import phonenumbers
-
 from repositories.proveedor_repositories import ProveedorRepository
+from services.encuesta_services import EncuestaService
 
 class ProveedorService:
 
     def __init__(self):
         self.repository = ProveedorRepository()
+        self.encuesta_service = EncuestaService()
+
 
 # =========================================================
 # REGISTRO DE PROVEEDOR
@@ -347,4 +349,31 @@ class ProveedorService:
             id_contrato,
             proveedor_id
         )
+
+    def listar_reservas(self, proveedor_id):
+        return self.repository.obtener_reservas_por_proveedor(
+            proveedor_id
+        )
+
+    def completar_reserva(self, id_reserva, proveedor_id):
+        resultado = self.repository.marcar_completada(
+            id_reserva,
+            proveedor_id
+        )
+
+        if not resultado.get("ok"):
+            return resultado
+
+        envio = self.encuesta_service.enviar_encuesta(
+            resultado["correo"],
+            resultado["nombre"],
+            resultado["id_reserva"],
+            resultado["paquete"],
+        )
+
+        return {
+            "ok": True,
+            "encuesta_enviada": envio.get("ok", False),
+            "paquete": resultado["paquete"],
+        }
 

@@ -289,11 +289,20 @@
 
                         <button
                             type="button"
-                            onclick="usarDemo('yadira@test.co', 'cliente_prueba')"
+                            onclick="usarDemo('nicollvaleria.sabogal.9@gmail.com', 'Ns198304*')"
                         >
                             <b>Cliente</b>
-                            <span>yadira@test.co</span>
-                            <em>cliente_prueba</em>
+                            <span>nicollvaleria.sabogal.9@gmail.com</span>
+                            <em>Ns198304*</em>
+                        </button>
+
+                        <button
+                            type="button"
+                            onclick="usarDemo('reservas@lasamericas.co', 'Proveedor123')"
+                        >
+                            <b>Proveedor</b>
+                            <span>reservas@lasamericas.co</span>
+                            <em>Proveedor123</em>
                         </button>
                     </div>
                 </div>
@@ -347,12 +356,14 @@ function usarDemo(correo, password) {
     limpiarError("correo");
     limpiarError("password");
 
-    const boton = document
-        .getElementById("loginForm")
-        ?.querySelector('button[type="submit"]');
+    const formulario = document.getElementById("loginForm");
 
-    if (boton) {
-        boton.focus();
+    if (formulario) {
+        if (typeof formulario.requestSubmit === "function") {
+            formulario.requestSubmit();
+        } else {
+            formulario.submit();
+        }
     }
 }
 
