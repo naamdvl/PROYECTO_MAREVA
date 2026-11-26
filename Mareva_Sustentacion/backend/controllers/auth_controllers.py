@@ -689,7 +689,7 @@ class AuthController:
 
             return redirect(
                 url_for(
-                    "home.home"
+                    "proveedor.contratos"
                 )
             )
 
