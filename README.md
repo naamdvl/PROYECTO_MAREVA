@@ -1,7 +1,6 @@
 # 🌊 MAREVA — Agencia de Viajes Digital
 
 > Plataforma web para la organización de planes vacacionales personalizados en Colombia.
-> Código del proyecto en la carpeta **`Mareva_Sustentacion/`**.
 
 ---
 
@@ -36,13 +35,10 @@ Mareva_Sustentacion/
 │   ├── routes/         → Definición de URLs (blueprints)
 │   ├── services/       → Reglas de negocio
 │   └── main.py         → Punto de entrada del servidor
+|
 ├── frontend/           → HTML5 · CSS3 · JavaScript (Jinja2)
 │   ├── static/         → CSS, JS, imágenes y videos
 │   └── templates/      → Plantillas HTML
-└── database/           → Scripts SQL y utilidades
-    ├── mareva_unificado.sql        → Modelo completo + datos iniciales
-    ├── migracion_caribe_2026.sql   → Migración de la versión Caribe
-    └── hashear_passwords.py        → Hashea contraseñas en texto plano
 ```
 
 ---
@@ -61,14 +57,16 @@ Mareva_Sustentacion/
 2. Ejecuta el script de creación completo:
 
 ```sql
-psql -U tu_usuario -d mareva -f database/mareva_unificado.sql
+psql -U tu_usuario -d mareva -f database/base_de_datos_mareva.sql
 ```
 
-3. Si vienes de una base existente de la versión Caribe, aplica la migración:
+3. Si vienes de una base existente , aplica la migración:
 
 ```sql
-psql -U tu_usuario -d mareva -f database/migracion_caribe_2026.sql
+psql -U tu_usuario -d mareva -f database/migracion_2026.sql
 ```
+
+(Puedes encontrar las bases de datos en la carpeta docs, en la rama desarrollo-backend o en el main)
 
 ### 4.2 Crear y activar el entorno virtual
 
@@ -109,26 +107,33 @@ pip install -r requirements.txt
 
 ### 4.4 Configurar `.env`
 
-Crea un archivo `.env` en la raíz de `Mareva_Sustentacion/` (nunca lo subas al repositorio):
+Crea un archivo `.env` en la raíz de proyecto:
 
 ```env
-DB_HOST=localhost
-DB_NAME=mareva
-DB_USER=postgres
-DB_PASSWORD=tu_password
-DB_PORT=5432
+DB_HOST= Servidor o maquina en donde esta alojada tu base de datos (ej: localhost)
+DB_PORT= Puerto de red por el que se conecta la base de datos (ej: Postgres tiene su puerto 5432 predeterminado)
+DB_NAME= Nombre especifico de la base de datos (ej: mareva, dbmareva, el que colocaste)
+DB_USER= Nombre especifico del usuario de base de datos con permisos para modificar los datos (ej: postgres, mareva_user.)
+DB_PASSWORD= Contraseña correspondiente de la base de datos que creaste.
+
+GOOGLE_PROJECT_ID= Identificador unico en texto del proyecto creado en Google Cloud Console.
+GOOGLE_PROJECT_NUMBER= Numero interno unico que Google asigna a ese mismo proyecto en la nube.
+GOOGLE_CLIENT_ID= Clave publica que identifica a tu aplicacion ante google para servicios como OAuth o APIs de Google.
+GOOGLE_CLIENT_SECRET= Clave secreta que valida tu aplicacion frente a Google, no publiques esta clave a nadie.
+GOOGLE_REDIRECT_URI= Es la URL exacta de tu aplicacion a la que Google redirige al usuario despues de que autoriza o inicia sesion.
+
+SMTP_HOST: Es la dirección del servidor de correo saliente que enviará los emails desde la plataforma (por ejemplo, smtp.gmail.com).
+SMTP_PORT: Es el puerto que usa el servidor de correo saliente (comúnmente 587 para TLS o 465 para SSL).
+SMTP_USER: Es la cuenta de correo o usuario autenticado desde el cual se envían los mensajes.
+SMTP_PASSWORD: Es la contraseña de esa cuenta o una contraseña de aplicación (App Password) generada para permitir el envío automático.
+SMTP_ADMIN_EMAIL: Es el correo del administrador que recibirá avisos, alertas o copias importantes del sistema.
+SMTP_FROM_NAME: Es el nombre visible que verá quien recibe el correo como remitente (por ejemplo, MAREVA).
+SMTP_REPLY_TO: Es la dirección de correo a la que irán las respuestas si el destinatario responde el mensaje.
+SMTP_USE_SSL: Indica si la conexión con el servidor de correo debe usar cifrado SSL (true o false).
 ```
 
-### 4.5 (Opcional) Hashear contraseñas legadas
 
-Si la BD tiene contraseñas en texto plano, corre el script de hasheo (desde `backend/`):
-
-```bash
-cd backend
-python ../database/hashear_passwords.py
-```
-
-### 4.6 Ejecutar la aplicación
+### 4.5 Ejecutar la aplicación
 
 El servidor se inicia desde la carpeta `backend/`:
 
@@ -137,7 +142,7 @@ cd backend
 python main.py
 ```
 
-### 4.7 Abrir el proyecto
+### 4.6 Abrir el proyecto
 
 Una vez iniciado el servidor, visita en tu navegador:
 
@@ -145,17 +150,14 @@ Una vez iniciado el servidor, visita en tu navegador:
 http://127.0.0.1:5000/
 ```
 
-> **Nota:** el video de portada `videoinicio.mp4` (318 MB) supera el límite de archivos de GitHub (100 MB) por lo que **no se incluye en el repositorio**. Debe copiarse manualmente a `frontend/static/videos/` si se desea ese video en particular. El video alternativo `video_inicio2.mp4` sí está incluido.
-
----
-
 ## 5. Usuarios de Prueba
 
 | Rol | Correo | Contraseña |
 |---|---|---|
 | Administrador | `nicoll@mareva.co` (o `cesar@mareva.co`, `andres@mareva.co`, `laura@mareva.co`, `sofia@mareva.co`) | `Admin_mareva01` |
 | Cliente | `yadira@test.co` | `cliente_prueba` |
-| Proveedor | (creado en `Proveedor_mareva01`) | `Proveedor_mareva01` |
+| Guia Turistica |`andres.guia@mareva.co` | `Guia123` |
+| Proveedor | `reservas@lasamericas.co` | `Proveedor_mareva01` |
 
 ---
 
@@ -206,7 +208,23 @@ http://127.0.0.1:5000/
 | `reportes.js` | Filtros de reportes |
 | `gamificacion_*.js` | (si aplica) Niveles e insignias |
 
-**Archivos CSS** (`frontend/static/css/`): `styles.css`, `index.css`, `auth.css`, `paquetes.css`, `mareva_redesign.css`, `reserva_flow.css`, `dashboard.css`, `reportes.css`, `perfil.css`, `niveles.css`, `gamificacion.css`, `gamificario.css`, `guia.css`.
+**Archivos CSS** (`frontend/static/css/`)
+
+| Archivo | Responsabilidad |
+|---|---|
+| `styles.css` | Estilos generales y base del sistema de diseño |
+| `index.css` | Estilos de la página principal (inicio) |
+| `auth.css` | Estilos de inicio de sesión y registro |
+| `paquetes.css` | Estilos del catálogo y detalle de paquetes turísticos |
+| `mareva_redesign.css` | Estilos del rediseño visual de MAREVA |
+| `reserva_flow.css` | Estilos del flujo y pasos de reserva |
+| `dashboard.css` | Estilos de los paneles del administrador |
+| `reportes.css` | Estilos de la vista y filtros de reportes |
+| `perfil.css` | Estilos del perfil de usuario |
+| `niveles.css` | Estilos de la vista de niveles |
+| `gamificacion.css` | Estilos del módulo de gamificación e insignias |
+| `gamificario.css` | Estilos complementarios o variantes de gamificación |
+| `guia.css` | Estilos del panel y vistas del guía turístico |
 
 ### 7.2 Backend
 
@@ -236,12 +254,16 @@ http://127.0.0.1:5000/
 ### 7.3 Versiones exactas (`requirements.txt`)
 
 ```
-Flask==3.1.3
-python-dotenv==1.2.2
-phonenumbers==9.0.36
-psycopg[binary]==3.3.4
+Flask==3.1.0
+python-dotenv==1.0.1
+requests==2.32.3
+google-auth==2.62.0
 openpyxl==3.1.5
-reportlab==4.4.1
+phonenumbers==9.0.36
+pip==24.0
+psycopg[binary]==3.3.4
+reportlab==5.0.1
+websocket-client==1.9.0
 ```
 
 | Capa | Resumen |
@@ -407,6 +429,11 @@ Cada categoría aplica un ajuste de precio diferente, y la factory decide qué c
 
 **Scrum**
 
+El desarrollo de **MAREVA** se gestionó bajo el marco de trabajo ágil **Scrum**, organizando el trabajo en ciclos cortos e iterativos (*sprints*) para entregar funcionalidades de forma incremental y continua.
+
+- **Planificación y seguimiento:** Gestión de tareas, historias de usuario y avance del equipo mediante tableros Kanban en **GitHub Projects**.
+- **Trabajo colaborativo:** Distribución de responsabilidades por módulos y capas de la arquitectura, con revisiones constantes para asegurar la calidad e integración del código.
+- **Entrega incremental:** Validación temprana de cada funcionalidad (autenticación, catálogo, reservas, paneles y reportes) antes de pasar a la siguiente iteración.
 ---
 
 ## 13. Integrantes
@@ -437,8 +464,6 @@ Cada categoría aplica un ajuste de precio diferente, y la factory decide qué c
 ✅ Repositorio colaborativo en GitHub
 
 ---
-
-## 15. Bootcamp
 
 **SENA — Arquitectura de Software**  
 Inicio: 25 de abril de 2026
