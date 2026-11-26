@@ -155,4 +155,5 @@ def solo_administrar():
     return redirect(url_for("dashboard.mostrar_panel"))
 
 if __name__ == "__main__":
-    main.run(debug=True, use_reloader=False)
+    port = int(os.environ.get("PORT", 5000))
+    main.run(host="0.0.0.0", port=port, debug=False)
